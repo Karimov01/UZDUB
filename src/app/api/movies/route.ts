@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import type { Movie, ContentType, ContentStatus } from "@/types/movie";
@@ -120,5 +121,11 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+  // Ommaviy sahifalar keshini yangilash — yangi kino darhol ko'rinadi
+  const path = movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
+  for (const p of ["/", "/kino", "/serial", "/top", "/janr", path]) {
+    revalidatePath(p);
+  }
+
   return NextResponse.json({ ok: true, movie });
 }

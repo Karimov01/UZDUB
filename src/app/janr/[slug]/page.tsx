@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { DEMO_MOVIES } from "@/lib/demo-data";
+import { getPublishedMovies } from "@/lib/movies";
 import MovieCard from "@/components/movie/MovieCard";
+
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -10,12 +12,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function JanrPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const published = await getPublishedMovies();
 
-  const movies = DEMO_MOVIES.filter((m) =>
+  const movies = published.filter((m) =>
     m.genres?.some((g) => g.slug === slug)
   );
 
-  const allMovies = movies.length > 0 ? movies : DEMO_MOVIES;
+  const allMovies = movies.length > 0 ? movies : published;
   const title = slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
   return (

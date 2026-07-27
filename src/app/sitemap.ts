@@ -1,9 +1,12 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/constants";
-import { DEMO_MOVIES } from "@/lib/demo-data";
+import { getPublishedMovies } from "@/lib/movies";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 300;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const movies = await getPublishedMovies();
 
   // Statik sahifalar
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -16,7 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Janr sahifalari (kontentdan noyob slug'lar)
   const genreSlugs = Array.from(
-    new Set(DEMO_MOVIES.flatMap((m) => m.genres?.map((g) => g.slug) ?? []))
+    new Set(movies.flatMap((m) => m.genres?.map((g) => g.slug) ?? []))
   );
   const genreRoutes: MetadataRoute.Sitemap = genreSlugs.map((slug) => ({
     url: `${SITE_URL}/janr/${slug}`,
@@ -26,9 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Har bir kino/serial sahifasi
-  const contentRoutes: MetadataRoute.Sitemap = DEMO_MOVIES.filter(
-    (m) => m.status === "PUBLISHED"
-  ).map((m) => ({
+  const contentRoutes: MetadataRoute.Sitemap = movies.map((m) => ({
     url: `${SITE_URL}/${m.type === "SERIAL" ? "serial" : "kino"}/${m.slug}`,
     lastModified: now,
     changeFrequency: "weekly",

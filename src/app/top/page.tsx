@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, Eye, Trophy } from "lucide-react";
-import { DEMO_MOVIES } from "@/lib/demo-data";
+import { getPublishedMovies } from "@/lib/movies";
 import { formatViewCount } from "@/lib/utils";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = { title: "Top Kinolar" };
 
-const sorted = [...DEMO_MOVIES].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
-
-export default function TopPage() {
+export default async function TopPage() {
+  const movies = await getPublishedMovies();
+  const sorted = [...movies].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
   return (
     <div className="max-w-[900px] mx-auto px-4 md:px-8 py-10">
       <div className="flex items-center gap-3 mb-8">

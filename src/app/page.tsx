@@ -5,13 +5,9 @@ import HeroBanner from "@/components/home/HeroBanner";
 import CategoryRow from "@/components/home/CategoryRow";
 import TrendingSection from "@/components/home/TrendingSection";
 import { HeroSkeleton, MovieCardSkeleton } from "@/components/ui/Skeleton";
-import {
-  DEMO_FEATURED,
-  DEMO_TRENDING,
-  DEMO_SERIALS,
-  DEMO_KINOLAR,
-  DEMO_MOVIES,
-} from "@/lib/demo-data";
+import { getFeatured, getTrending, getSerials, getKinolar, getPublishedMovies } from "@/lib/movies";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "UZDUB Play — O'zbekistonning Premium Kino Platformasi",
@@ -19,11 +15,19 @@ export const metadata: Metadata = {
     "O'zbekistonning eng yaxshi kino va serial platformasi. HD sifatda, o'zbek tilida tomosha qiling.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [featured, trending, serials, kinolar, allMovies] = await Promise.all([
+    getFeatured(),
+    getTrending(),
+    getSerials(),
+    getKinolar(),
+    getPublishedMovies(),
+  ]);
+
   return (
     <div style={{ background: "var(--bg-primary)" }}>
       <Suspense fallback={<HeroSkeleton />}>
-        <HeroBanner movies={DEMO_FEATURED} />
+        <HeroBanner movies={featured} />
       </Suspense>
 
       <div className="relative z-10 -mt-8">
@@ -39,22 +43,22 @@ export default function HomePage() {
           <CategoryRow
             title="🎬 Eng Ko'p Ko'rilgan"
             href="/kino"
-            movies={DEMO_KINOLAR}
+            movies={kinolar}
           />
         </Suspense>
 
-        <TrendingSection movies={DEMO_TRENDING} />
+        <TrendingSection movies={trending} />
 
         <CategoryRow
           title="📺 Seriallar"
           href="/serial"
-          movies={DEMO_SERIALS}
+          movies={serials}
         />
 
         <CategoryRow
           title="⭐ Tanlangan Kinolar"
           href="/kino"
-          movies={DEMO_MOVIES}
+          movies={allMovies}
         />
 
         <section className="px-4 md:px-8 max-w-[1400px] mx-auto py-8">

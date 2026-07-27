@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
-import { DEMO_MOVIES } from "@/lib/demo-data";
+import type { Movie } from "@/types/movie";
 import MovieCard from "@/components/movie/MovieCard";
 
 export default function QidirishPage() {
   const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState<Movie[]>([]);
+
+  // Barcha (nashr etilgan) kinolarni ochiq API'dan olamiz — baza + demo
+  useEffect(() => {
+    fetch("/api/public/movies")
+      .then((r) => (r.ok ? r.json() : { movies: [] }))
+      .then((d) => setMovies(Array.isArray(d.movies) ? d.movies : []))
+      .catch(() => {});
+  }, []);
 
   const results = query.trim().length > 1
-    ? DEMO_MOVIES.filter((m) =>
+    ? movies.filter((m) =>
         m.title.toLowerCase().includes(query.toLowerCase()) ||
         m.originalTitle?.toLowerCase().includes(query.toLowerCase())
       )
