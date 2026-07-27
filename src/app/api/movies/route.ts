@@ -112,10 +112,11 @@ export async function POST(req: Request) {
 
   try {
     await addMovie(movie);
-  } catch {
-    // Vercel serverless'da fayl tizimi yozib bo'lmaydi — doimiy baza kerak
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    // Ko'pincha DATABASE_URL sozlanmagan yoki noto'g'ri bo'lsa yuz beradi
     return NextResponse.json(
-      { error: "Saqlab bo'lmadi. Production'da doimiy baza (PostgreSQL) ulang." },
+      { error: `Bazaga saqlab bo'lmadi. DATABASE_URL ni tekshiring. ${msg}`.trim() },
       { status: 500 }
     );
   }
