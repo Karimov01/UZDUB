@@ -73,8 +73,8 @@ export async function POST(req: Request) {
   }
   const d = parsed.data;
 
-  // Noyob slug yaratish (asl nomdan afzal, keyin nomdan)
-  const base = slugify(d.originalTitle || d.title) || `kino-${Date.now()}`;
+  // Noyob slug yaratish (o'zbekcha nomdan afzal; bo'sh bo'lsa asl nomdan)
+  const base = slugify(d.title) || slugify(d.originalTitle) || `kino-${Date.now()}`;
   let slug = base;
   let i = 2;
   while (await slugExists(slug)) {
