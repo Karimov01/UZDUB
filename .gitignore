@@ -32,6 +32,18 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# yuklangan rasmlar (papka saqlanadi, ichidagilar emas)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# local sqlite db
+*.db
+*.db-journal
+
+# lokal JSON saqlash (saqlangan kinolar)
+/data/
 
 # vercel
 .vercel

@@ -1,0 +1,44 @@
+// PRODUCTION uchun shablon (Prisma 7 + PostgreSQL).
+// Hozir lokal saqlash JSON fayl orqali (src/lib/movies-store.ts) — akkauntsiz,
+// Windows'da native modulsiz ishlaydi. Production'ga o'tganda:
+//   1) `datasource db` provider'ini "postgresql" qiling va DATABASE_URL bering
+//      (Prisma 7 da ulanish URL'i `prisma.config.ts` da beriladi — pris.ly/d/config-datasource).
+//   2) `npx prisma migrate dev` -> `npx prisma generate`.
+//   3) src/app/api/movies/route.ts dagi JSON store'ni Prisma client bilan almashtiring.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Movie {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  originalTitle String?
+  description   String
+  shortDesc     String?
+  posterUrl     String?
+  backdropUrl   String?
+  videoUrl      String?
+  trailerUrl    String?
+  type          String   @default("MOVIE")
+  status        String   @default("DRAFT")
+  year          Int?
+  duration      Int?
+  country       String?
+  language      String?
+  dubbing       String?
+  imdbRating    Float?
+  viewCount     Int      @default(0)
+  isFeatured    Boolean  @default(false)
+  isTrending    Boolean  @default(false)
+  isPremium     Boolean  @default(false)
+  genres        String   @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
