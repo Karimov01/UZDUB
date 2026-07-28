@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored video player (uchinchi tomon kodi — lint qilinmaydi)
+    "public/**",
   ]),
 ]);
 

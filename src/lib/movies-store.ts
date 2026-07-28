@@ -48,3 +48,27 @@ export async function slugExists(slug: string): Promise<boolean> {
   const rows = (await sql`SELECT 1 FROM movies WHERE slug = ${slug} LIMIT 1`) as unknown[];
   return rows.length > 0;
 }
+
+export async function getMovie(id: string): Promise<Movie | undefined> {
+  await ensureTable();
+  const sql = db();
+  const rows = (await sql`SELECT data FROM movies WHERE id = ${id} LIMIT 1`) as { data: Movie }[];
+  return rows[0]?.data;
+}
+
+export async function updateMovie(id: string, movie: Movie): Promise<boolean> {
+  await ensureTable();
+  const sql = db();
+  const rows = (await sql`
+    UPDATE movies SET data = ${JSON.stringify(movie)}::jsonb, slug = ${movie.slug}
+    WHERE id = ${id} RETURNING id
+  `) as unknown[];
+  return rows.length > 0;
+}
+
+export async function deleteMovie(id: string): Promise<boolean> {
+  await ensureTable();
+  const sql = db();
+  const rows = (await sql`DELETE FROM movies WHERE id = ${id} RETURNING id`) as unknown[];
+  return rows.length > 0;
+}

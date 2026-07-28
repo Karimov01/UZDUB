@@ -35,6 +35,21 @@ function KinolarTable() {
   }, []);
   const allMovies = [...dbMovies, ...DEMO_MOVIES];
 
+  const handleDelete = async (m: Movie) => {
+    if (!confirm(`"${m.title}" o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.`)) return;
+    try {
+      const res = await fetch(`/api/movies/${m.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(json.error || "O'chirishda xatolik");
+        return;
+      }
+      setDbMovies((prev) => prev.filter((x) => x.id !== m.id));
+    } catch {
+      alert("Tarmoq xatosi");
+    }
+  };
+
   const filtered = allMovies.filter((m) => {
     const matchSearch =
       m.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -195,7 +210,7 @@ function KinolarTable() {
                         className="p-1.5 rounded-lg transition-all hover:bg-red-500/10"
                         style={{ color: "#EF4444" }}
                         title="O'chirish"
-                        onClick={() => alert(`"${movie.title}" o'chirilmoqda (demo rejim)`)}
+                        onClick={() => handleDelete(movie)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

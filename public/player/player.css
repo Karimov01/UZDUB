@@ -1,0 +1,1106 @@
+/*!
+ * ==========================================
+ * UZDUB Player
+ * Style v4.0  (FreeKino-style)
+ * https://uzdub.net
+ * ==========================================
+ */
+
+/* ── Root & reset ── */
+.uzdub {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+    --uzdub-accent: #7367F0;
+}
+.uzdub * { box-sizing: border-box; }
+
+/* ── Main video ── */
+.uzdub-video {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    aspect-ratio: auto !important;
+    background: #000;
+    display: block;
+    transition: filter .35s ease;
+    object-fit: contain;
+}
+
+/* ── Poster ── */
+.uzdub-poster-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(24px) brightness(.55);
+    transform: scale(1.15);
+    z-index: 1;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+.uzdub-poster {
+    position: absolute;
+    inset: 0;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 2;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+.uzdub:not(.uzdub-never-played) .uzdub-poster,
+.uzdub:not(.uzdub-never-played) .uzdub-poster-bg {
+    opacity: 0;
+    pointer-events: none;
+}
+.uzdub-paused:not(.uzdub-never-played):not(.uzdub-in-ad) .uzdub-video {
+    filter: brightness(.55) saturate(.85);
+}
+
+/* ── Embed iframe ── */
+.uzdub-embed {
+    position: absolute;
+    inset: 0;
+    display: none;
+    z-index: 3;
+}
+.uzdub-embed.show { display: block; }
+.uzdub-embed iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.uzdub-embed-mode .uzdub-controls,
+.uzdub-embed-mode .uzdub-big-play,
+.uzdub-embed-mode .uzdub-gesture { display: none !important; }
+
+/* ── Ad layer ── */
+.uzdub-ad-layer {
+    position: absolute;
+    inset: 0;
+    display: none;
+    background: transparent; /* VAST: main video shows through; Yandex: adVideo fills */
+    z-index: 20;
+}
+.uzdub-ad-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: none;
+    aspect-ratio: auto !important;
+    max-width: none !important;
+}
+.uzdub-ad-top {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    pointer-events: none;
+    z-index: 3;
+}
+.uzdub-ad-label-text {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+.uzdub-ad-counter {
+    display: none;
+    margin-left: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(0,0,0,.4);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* Ad skip button with animated ring */
+.uzdub-ad-skip {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    pointer-events: auto;
+    background: rgba(0,0,0,.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #fff;
+    border: none;
+    padding: 5px 14px 5px 5px;
+    display: none;
+    align-items: center;
+    gap: 9px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    z-index: 4;
+    border-radius: 28px;
+    transition: background .15s;
+}
+.uzdub-ad-skip.uzdub-ad-skip-ready:hover { background: rgba(0,0,0,.7); }
+.uzdub-ad-skip-ring {
+    position: relative;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+}
+.uzdub-ad-skip-circle {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+.uzdub-ad-skip-circle-bg {
+    fill: none;
+    stroke: rgba(255,255,255,.3);
+    stroke-width: 2;
+}
+.uzdub-ad-skip-circle-fg {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    transition: stroke-dashoffset .05s linear;
+}
+.uzdub-ad-skip-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+}
+.uzdub-ad-skip-text { white-space: nowrap; transition: font-size .15s, font-weight .15s; }
+.uzdub-ad-skip.uzdub-ad-skip-ready .uzdub-ad-skip-text { font-weight: 700; font-size: 14px; }
+.uzdub-ad-skip.uzdub-ad-skip-wait  { cursor: default; opacity: .75; }
+.uzdub-ad-skip.uzdub-ad-skip-ready { cursor: pointer; }
+.uzdub-ad-skip.uzdub-ad-skip-ready:hover { opacity: 1; }
+
+.uzdub-ad-vol-btn {
+    position: absolute;
+    bottom: 18px;
+    right: 16px;
+    pointer-events: auto;
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px;
+    z-index: 4;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
+}
+.uzdub-ad-vol-btn svg { width: 26px; height: 26px; }
+.uzdub-ad-vol-btn:hover { opacity: .85; }
+
+.uzdub-ad-clickzone {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    cursor: pointer;
+}
+
+/* Yandex SDK o'z UI'sini beradi (skip, click-through, ovoz) —
+   bizning VAST bezaklarimizni yashiramiz, aks holda ular Yandex skip'ini to'sadi */
+.uzdub-ad-yandex .uzdub-ad-clickzone,
+.uzdub-ad-yandex .uzdub-ad-vol-btn,
+.uzdub-ad-yandex .uzdub-ad-top,
+.uzdub-ad-yandex .uzdub-ad-skip { display: none !important; }
+.uzdub-ad-loading {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 4;
+    pointer-events: none;
+    background: rgba(0,0,0,.4);
+}
+.uzdub-ad-loading.uzdub-visible { display: flex; }
+.uzdub-ad-loading-spinner {
+    position: relative;
+    width: 36px;
+    height: 36px;
+}
+.uzdub-ad-loading-spinner > div {
+    position: absolute;
+    inset: 0;
+    border: 2px solid transparent;
+    border-top-color: var(--uzdub-accent);
+    border-radius: 50%;
+    animation: uzdub-spin 1s linear infinite;
+}
+.uzdub-ad-loading-spinner > div:nth-child(2) { animation-delay: -.3s; opacity: .75; }
+.uzdub-ad-loading-spinner > div:nth-child(3) { animation-delay: -.6s; opacity: .5; }
+.uzdub-ad-loading-spinner > div:nth-child(4) { animation-delay: -.9s; opacity: .25; }
+.uzdub-ad-loading-text { font-size: 13px; color: rgba(255,255,255,.75); letter-spacing: .3px; }
+
+/* Hide player controls while ad plays */
+.uzdub-in-ad .uzdub-controls  { opacity: 0; pointer-events: none; }
+.uzdub-in-ad .uzdub-big-play,
+.uzdub-in-ad .uzdub-gesture,
+.uzdub-in-ad .uzdub-watermark { display: none; }
+
+/* ── Gesture zones ── */
+.uzdub-gesture {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    z-index: 5;
+}
+.uzdub-gesture-left,
+.uzdub-gesture-mid,
+.uzdub-gesture-right { flex: 1; position: relative; }
+.uzdub-gesture-mid   { flex: 2; }
+
+/* ── Center ripple (tap / seek flash) ── */
+.uzdub-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    pointer-events: none;
+    transition: transform .4s cubic-bezier(.2,.9,.3,1), opacity .5s ease-out;
+    opacity: 0;
+    z-index: 9;
+}
+.uzdub-ripple.uzdub-ripple-active {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+.uzdub-ripple-label { font-size: 12px; letter-spacing: .4px; padding: 0 4px; }
+
+/* ── Big play button ── */
+.uzdub-big-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 86px;
+    height: 50px;
+    border-radius: 12px;
+    background: rgba(0,0,0,.5);
+    border: none;
+    color: #7367f0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 6;
+    transition: transform .2s ease, background .2s, opacity .2s;
+    box-shadow: 0 3px 10px rgba(0,0,0,.3);
+}
+.uzdub-big-play svg { width: 26px; height: 26px; margin-left: 3px; }
+.uzdub-big-play:hover {
+    background: rgba(0,0,0,.75);
+    transform: translate(-50%, -50%) scale(1.06);
+}
+.uzdub-playing .uzdub-big-play { display: none; }
+
+/* ── 2× hold speed indicator ── */
+.uzdub-hold-speed {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    display: none;
+    align-items: center;
+    gap: 7px;
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 12;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s, transform .18s;
+}
+.uzdub-hold-speed.uzdub-visible {
+    display: flex;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.uzdub-hold-speed-icon { letter-spacing: -2px; font-size: 11px; line-height: 1; }
+.uzdub-hold-speed-x    { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── Buffering spinner ── */
+.uzdub-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    display: none;
+    z-index: 7;
+}
+.uzdub-spinner > div {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: 3px solid transparent;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: uzdub-spin 1s linear infinite;
+}
+.uzdub-spinner > div:nth-child(2) { animation-delay: -.3s; opacity: .75; }
+.uzdub-spinner > div:nth-child(3) { animation-delay: -.6s; opacity: .5; }
+.uzdub-spinner > div:nth-child(4) { animation-delay: -.9s; opacity: .25; }
+
+/* ── Pause-ad banner ── */
+.uzdub-pause-ad {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 80%;
+    max-height: 70%;
+    display: none;
+    z-index: 14;
+    animation: uzdub-fade-in .3s ease-out;
+}
+.uzdub-pause-ad.uzdub-visible { display: block; }
+.uzdub-pause-ad-link { display: block; line-height: 0; cursor: pointer; }
+.uzdub-pause-ad-img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    display: block;
+}
+.uzdub-pause-ad-close {
+    position: absolute;
+    top: -12px; right: -12px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.85);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.3);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+}
+.uzdub-pause-ad-close:hover { background: #000; border-color: #fff; }
+.uzdub-pause-ad-label {
+    position: absolute;
+    bottom: -22px; left: 0;
+    font-size: 10px;
+    color: rgba(255,255,255,.6);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    background: rgba(0,0,0,.6);
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+/* ── Skip segment (intro/recap) ── */
+.uzdub-skip-seg {
+    position: absolute;
+    bottom: 80px; right: 20px;
+    background: rgba(0,0,0,.75);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.3);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    z-index: 13;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: uzdub-fade-in .25s ease-out;
+}
+.uzdub-skip-seg:hover { background: rgba(0,0,0,.92); border-color: #fbbf24; }
+.uzdub-skip-seg::after { content: "›"; font-size: 18px; line-height: 1; }
+
+/* ── Chapter title ── */
+.uzdub-chapter-title {
+    position: absolute;
+    left: 14px; bottom: 48px;
+    font-size: 12px;
+    color: rgba(255,255,255,.85);
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+    z-index: 11;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+.uzdub-chapter-title.uzdub-visible { opacity: 1; }
+.uzdub-idle .uzdub-chapter-title   { opacity: 0; }
+
+/* ── Playlist bar ── */
+.uzdub-plist-bar {
+    position: absolute;
+    top: 14px; left: 16px;
+    display: none;
+    z-index: 11;
+    gap: 6px;
+    transition: opacity .3s, transform .3s;
+}
+.uzdub-plist-bar.uzdub-visible { display: flex; }
+.uzdub-idle .uzdub-plist-bar { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+.uzdub-idle .uzdub-plist-menu,
+.uzdub-in-ad .uzdub-plist-menu  { display: none !important; }
+.uzdub-in-ad .uzdub-plist-bar,
+.uzdub-never-played .uzdub-plist-bar { opacity: 0; pointer-events: none; }
+
+.uzdub-plist-btn {
+    background: rgba(0,0,0,.7);
+    border: 1px solid rgba(255,255,255,.08);
+    color: #fff;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    transition: background .15s, border-color .15s;
+    font-family: inherit;
+    line-height: 1;
+    border-radius: 5px;
+}
+.uzdub-plist-btn:hover { background: rgba(20,20,22,.92); border-color: rgba(255,255,255,.2); }
+.uzdub-plist-btn.uzdub-plist-open { background: var(--uzdub-accent); color: #fff; border-color: transparent; }
+.uzdub-plist-value { font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.uzdub-plist-total { font-weight: 500; font-size: 13px; opacity: .5; }
+.uzdub-plist-sfx   { font-size: 13px; opacity: .65; margin-left: 2px; }
+.uzdub-plist-chev  { font-size: 10px; opacity: .55; margin-left: 5px; transition: transform .2s; }
+.uzdub-plist-btn.uzdub-plist-open .uzdub-plist-chev { transform: rotate(180deg); opacity: .9; }
+
+.uzdub-plist-menu {
+    position: absolute;
+    display: none;
+    background: rgba(10,10,12,.95);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 5px;
+    padding: 4px;
+    min-width: 180px;
+    max-height: 55%;
+    overflow-y: auto;
+    z-index: 12;
+    box-shadow: 0 6px 20px rgba(0,0,0,.5);
+}
+.uzdub-plist-menu.uzdub-visible { display: block; }
+.uzdub-plist-menu::-webkit-scrollbar { width: 6px; }
+.uzdub-plist-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
+.uzdub-plist-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background .12s;
+    font-family: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    gap: 10px;
+}
+.uzdub-plist-item:hover { background: rgba(255,255,255,.07); }
+.uzdub-plist-item.uzdub-active { background: var(--uzdub-accent); font-weight: 700; }
+.uzdub-plist-item.uzdub-active::after { content: "✓"; margin-left: auto; font-size: 12px; }
+
+/* ── Next-episode card ── */
+.uzdub-next-ep {
+    position: absolute;
+    right: 20px; bottom: 80px;
+    background: rgba(20,20,22,.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    z-index: 14;
+    max-width: 360px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+    animation: uzdub-fade-in .4s ease-out;
+}
+.uzdub-next-ep.uzdub-visible { display: flex; }
+.uzdub-next-ep-thumb {
+    flex-shrink: 0;
+    width: 80px; height: 45px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    background-color: #111;
+}
+.uzdub-next-ep-info { flex: 1; min-width: 0; }
+.uzdub-next-ep-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #fbbf24;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.uzdub-next-ep-title {
+    font-size: 13px;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.uzdub-next-ep-countdown { font-size: 11px; color: #888; margin-top: 2px; }
+.uzdub-next-ep-sec { color: #fbbf24; font-weight: 700; }
+.uzdub-next-ep-play {
+    background: #fbbf24;
+    color: #000;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.uzdub-next-ep-play:hover { background: #f59e0b; }
+.uzdub-next-ep-close {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.uzdub-next-ep-close:hover { color: #fff; }
+
+/* ── Resume dialog ── */
+.uzdub-resume {
+    position: absolute;
+    left: 10px; right: 10px; bottom: 10px;
+    background: rgba(28,28,32,.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    z-index: 14;
+    animation: uzdub-fade-in .4s ease-out;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.uzdub-resume.uzdub-visible { display: flex; }
+.uzdub-resume-msg  { font-size: 15px; color: #fff; font-weight: 500; line-height: 1.4; flex: 1; min-width: 0; }
+.uzdub-resume-btns { display: flex; gap: 10px; flex-shrink: 0; }
+.uzdub-resume-btn  {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform .15s, background .15s;
+    white-space: nowrap;
+}
+.uzdub-resume-btn:active { transform: scale(.96); }
+.uzdub-resume-continue { background: var(--uzdub-accent); color: #fff; }
+.uzdub-resume-continue:hover { filter: brightness(1.1); }
+.uzdub-resume-restart { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+.uzdub-resume-restart:hover { background: rgba(255,255,255,.25); }
+
+/* ── Error screen ── */
+.uzdub-error {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.85);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    z-index: 15;
+    text-align: center;
+    padding: 20px;
+}
+.uzdub-error.uzdub-visible { display: flex; }
+.uzdub-error-icon { color: #ef4444; opacity: .9; }
+.uzdub-error-msg  { font-size: 14px; color: #e5e5e5; font-weight: 500; }
+.uzdub-error-retry {
+    background: var(--uzdub-accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .3px;
+}
+.uzdub-error-retry:hover { filter: brightness(1.1); }
+
+/* ── Controls bar ── */
+.uzdub-controls {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 10px 14px 8px;
+    background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
+    z-index: 10;
+    transition: opacity .3s, transform .3s;
+}
+.uzdub-idle          .uzdub-controls { opacity: 0; transform: translateY(10px); pointer-events: none; }
+.uzdub-never-played  .uzdub-controls { opacity: 0; pointer-events: none; }
+
+/* Progress bar */
+.uzdub-progress-wrap { padding: 8px 0; cursor: pointer; }
+.uzdub-progress-hit  { position: relative; height: 4px; transition: height .15s; }
+.uzdub-progress-wrap:hover .uzdub-progress-hit { height: 6px; }
+
+.uzdub-progress-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,.25);
+    border-radius: 2px;
+}
+.uzdub-progress-buffer {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: rgba(255,255,255,.45);
+    border-radius: 2px;
+    width: 0;
+}
+.uzdub-progress-played {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: var(--uzdub-accent);
+    border-radius: 2px;
+    width: 0;
+}
+.uzdub-progress-handle {
+    position: absolute;
+    top: 50%; left: 0;
+    width: 14px; height: 14px;
+    background: var(--uzdub-accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5);
+    cursor: grab;
+    touch-action: none;
+}
+.uzdub-progress-wrap:hover .uzdub-progress-handle {
+    transform: translate(-50%, -50%) scale(1.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,.7);
+}
+.uzdub-progress-handle.uzdub-dragging,
+.uzdub-progress-handle:active {
+    transform: translate(-50%, -50%) scale(1.5);
+    cursor: grabbing;
+}
+.uzdub-progress-handle::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+}
+.uzdub-progress-hover {
+    position: absolute;
+    bottom: 100%; left: 0;
+    padding: 4px 8px;
+    background: rgba(0,0,0,.85);
+    color: #fff;
+    font-size: 11px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+    transform: translateX(-50%);
+    display: none;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Controls row */
+.uzdub-row       { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.uzdub-row-left,
+.uzdub-row-right { display: flex; align-items: center; gap: 4px; }
+
+/* Icon buttons */
+.uzdub-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+    position: relative;
+    overflow: hidden;
+}
+.uzdub-btn:hover { background: rgba(255,255,255,.15); }
+.uzdub-btn svg   { width: 22px; height: 22px; transition: transform .25s cubic-bezier(.34,1.5,.64,1), opacity .15s; }
+.uzdub-btn.uzdub-active { color: #fbbf24; }
+
+/* Button click ripple */
+.uzdub-btn-ripple {
+    position: absolute;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.35);
+    transform: scale(0);
+    animation: uzdub-btn-ripple .5s ease-out forwards;
+    pointer-events: none;
+}
+@keyframes uzdub-btn-ripple {
+    to { transform: scale(20); opacity: 0; }
+}
+
+/* HD badge */
+.uzdub-hd-badge {
+    position: absolute;
+    top: 2px; right: 2px;
+    background: #fbbf24;
+    color: #000;
+    font-size: 8px;
+    font-weight: 800;
+    padding: 1px 3px;
+    border-radius: 2px;
+    letter-spacing: .3px;
+    line-height: 1;
+    display: none;
+    pointer-events: none;
+}
+.uzdub-hd-badge.uzdub-hd-4k { background: #ef4444; color: #fff; }
+.uzdub-settings-btn { position: relative; }
+
+/* Volume */
+.uzdub-vol-wrap { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
+.uzdub-vol-slider {
+    position: relative;
+    width: 0;
+    height: 4px;
+    background: rgba(255,255,255,.3);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: width .2s;
+    overflow: visible;
+}
+.uzdub-vol-wrap:hover .uzdub-vol-slider { width: 80px; margin: 0 6px; }
+.uzdub-vol-fill {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: #fff;
+    border-radius: 2px;
+    width: 100%;
+}
+.uzdub-vol-handle {
+    position: absolute;
+    top: 50%; left: 100%;
+    width: 12px; height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity .2s;
+}
+.uzdub-vol-wrap:hover .uzdub-vol-handle { opacity: 1; }
+
+/* Time display */
+.uzdub-time {
+    font-size: 12px;
+    color: rgba(255,255,255,.85);
+    margin-left: 8px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ── Settings menu ── */
+.uzdub-menu {
+    position: absolute;
+    right: 12px; bottom: 64px;
+    min-width: 220px;
+    max-height: 60%;
+    background: rgba(20,20,20,.95);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    overflow-y: auto;
+    z-index: 15;
+    backdrop-filter: blur(8px);
+    padding: 6px;
+}
+.uzdub-menu[hidden] { display: none; }
+
+.uzdub-menu-row,
+.uzdub-menu-item,
+.uzdub-menu-back {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: left;
+    font-family: inherit;
+}
+.uzdub-menu-row:hover,
+.uzdub-menu-item:hover,
+.uzdub-menu-back:hover { background: rgba(255,255,255,.08); }
+
+.uzdub-menu-val {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255,255,255,.65);
+    font-size: 12px;
+}
+.uzdub-menu-back {
+    color: rgba(255,255,255,.8);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 4px;
+    gap: 6px;
+    justify-content: flex-start;
+}
+.uzdub-menu-item.uzdub-active { color: var(--uzdub-accent); }
+.uzdub-check { display: flex; align-items: center; }
+.uzdub-menu-quality-info {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,.55);
+    line-height: 1.5;
+}
+
+/* ── Thumbnail preview ── */
+.uzdub-thumbnail {
+    position: absolute;
+    bottom: 56px;
+    pointer-events: none;
+    z-index: 12;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.uzdub-thumb-canvas {
+    width: 160px;
+    height: 90px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,.2);
+    background: #111;
+    display: block;
+}
+.uzdub-thumb-time {
+    font-size: 11px;
+    color: #fff;
+    background: rgba(0,0,0,.75);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+.uzdub-thumb-video { display: none; position: absolute; }
+
+/* ── Volume OSD (right-side bar indicator) ── */
+.uzdub-vol-indicator {
+    position: absolute;
+    top: 50%; right: 24px;
+    transform: translateY(-50%);
+    padding: 16px 12px;
+    background: rgba(0,0,0,.75);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    z-index: 8;
+}
+.uzdub-vol-indicator.uzdub-visible { opacity: 1; }
+.uzdub-vol-bar {
+    width: 4px;
+    height: 100px;
+    background: rgba(255,255,255,.25);
+    position: relative;
+    border-radius: 2px;
+    margin-bottom: 6px;
+}
+.uzdub-vol-bar > div {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--uzdub-accent);
+    border-radius: 2px;
+    height: 100%;
+    transition: height .1s;
+}
+.uzdub-vol-pct { font-size: 12px; margin-top: 4px; }
+
+/* ── Toast ── */
+.uzdub-toast {
+    position: absolute;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(0,0,0,.82);
+    color: #fff;
+    font-size: 13px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 16;
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    backdrop-filter: blur(6px);
+}
+.uzdub-toast.uzdub-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ── Brand watermark (UZDUB tepada, Media pastda binafsha) ── */
+.uzdub-watermark {
+    position: absolute;
+    top: 12px; right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.05;
+    z-index: 4;
+    pointer-events: none;
+    opacity: .28;                 /* kino ko'rilayotganda xira */
+    transition: opacity .35s ease;
+    text-shadow: 0 1px 3px rgba(0,0,0,.55);
+}
+/* Controls ko'ringanda (sichqoncha harakatlanganda) — tiniqlashadi;
+   kino ko'rilib controls yashirinsa (idle) — xiralashadi */
+.uzdub:not(.uzdub-idle) .uzdub-watermark { opacity: .9; }
+/* Reklama paytida yashirin */
+.uzdub-in-ad .uzdub-watermark { display: none; }
+
+.uzdub-watermark span {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #fff;
+}
+.uzdub-watermark small {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--uzdub-accent);   /* binafsha #7367F0 */
+    margin-top: 2px;
+    margin-right: 1px;
+}
+
+/* ── Fullscreen ── */
+.uzdub-fs,
+.uzdub:fullscreen,
+.uzdub:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: auto;
+}
+.uzdub:focus-visible { outline: 2px solid var(--uzdub-accent); outline-offset: -2px; }
+
+/* ── Cursor hide when idle ── */
+.uzdub-cursor-hidden,
+.uzdub-cursor-hidden * { cursor: none !important; }
+
+/* ── Keyframes ── */
+@keyframes uzdub-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes uzdub-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive: tablet ── */
+@media (max-width: 900px) {
+    .uzdub-plist-menu { min-width: 110px; padding: 2px; border-radius: 4px; }
+    .uzdub-plist-item { padding: 6px 9px; font-size: 11px; border-radius: 3px; }
+}
+
+/* ── Responsive: mobile ── */
+@media (max-width: 640px) {
+    .uzdub-time { font-size: 11px; }
+    .uzdub-vol-slider { display: none !important; }
+    .uzdub-big-play { width: 68px; height: 40px; }
+    .uzdub-big-play svg { width: 22px; height: 22px; }
+    .uzdub-menu { right: 8px; left: 8px; bottom: 60px; min-width: auto; }
+    .uzdub-controls { padding: 6px 8px 4px; }
+    .uzdub-row { gap: 2px; }
+    .uzdub-row-left, .uzdub-row-right { gap: 0; }
+    .uzdub-btn { padding: 8px; }
+    .uzdub-btn svg { width: 20px; height: 20px; }
+    .uzdub-pip-btn { display: none; }
+    .uzdub-plist-bar { top: 10px; left: 10px; gap: 4px; }
+    .uzdub-plist-btn { padding: 8px 14px; font-size: 13px; gap: 4px; }
+    .uzdub-plist-value { font-size: 14px; }
+    .uzdub-plist-total, .uzdub-plist-sfx { font-size: 12px; }
+    .uzdub-plist-chev  { font-size: 9px; margin-left: 3px; }
+    .uzdub-next-ep { right: 10px; left: 10px; max-width: none; }
+}
+
+/* ── Responsive: small mobile ── */
+@media (max-width: 500px) {
+    .uzdub-resume {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        gap: 12px;
+    }
+    .uzdub-resume-msg  { font-size: 13px; text-align: center; }
+    .uzdub-resume-btns { gap: 8px; }
+    .uzdub-resume-btn  { flex: 1; }
+    .uzdub-next-ep     { flex-direction: column; align-items: flex-start; }
+    .uzdub-next-ep-thumb { width: 100%; height: 80px; }
+}

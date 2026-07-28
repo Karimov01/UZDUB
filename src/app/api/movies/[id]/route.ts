@@ -1,0 +1,95 @@
+import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import type { Movie, ContentType, ContentStatus } from "@/types/movie";
+import { getMovie, updateMovie, deleteMovie } from "@/lib/movies-store";
+import { MovieInput, mapGenres } from "@/lib/movie-input";
+
+export const runtime = "nodejs";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+function revalidateAll(path?: string) {
+  for (const p of ["/", "/kino", "/serial", "/top", "/janr", ...(path ? [path] : [])]) {
+    revalidatePath(p);
+  }
+}
+
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  let ok = false;
+  try {
+    ok = await deleteMovie(id);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    return NextResponse.json({ error: `Bazaga ulanib bo'lmadi. ${msg}`.trim() }, { status: 500 });
+  }
+  if (!ok) {
+    return NextResponse.json(
+      { error: "Bu kino bazada yo'q (namuna kinolarni o'chirib bo'lmaydi)" },
+      { status: 404 }
+    );
+  }
+  revalidateAll();
+  return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const existing = await getMovie(id);
+  if (!existing) {
+    return NextResponse.json(
+      { error: "Bu kino bazada yo'q (namuna kinoni tahrirlab bo'lmaydi)" },
+      { status: 404 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Noto'g'ri so'rov" }, { status: 400 });
+  }
+
+  const parsed = MovieInput.safeParse(body);
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message ?? "Ma'lumotlar noto'g'ri";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
+  const d = parsed.data;
+
+  const updated: Movie = {
+    ...existing,
+    id,
+    slug: existing.slug, // slug o'zgarmaydi — eski havolalar buzilmasin
+    title: d.title,
+    originalTitle: d.originalTitle || undefined,
+    description: d.description,
+    shortDesc: d.shortDesc || undefined,
+    posterUrl: d.posterUrl || undefined,
+    backdropUrl: d.backdropUrl || undefined,
+    videoUrl: d.videoUrl || undefined,
+    trailerUrl: d.trailerUrl || undefined,
+    type: d.type as ContentType,
+    status: d.status as ContentStatus,
+    year: d.year,
+    duration: d.duration,
+    country: d.country || undefined,
+    language: d.language || undefined,
+    dubbing: d.dubbing || undefined,
+    imdbRating: d.imdbRating,
+    isFeatured: d.isFeatured,
+    isTrending: d.isTrending,
+    isPremium: d.isPremium,
+    genres: mapGenres(d.genres),
+  };
+
+  try {
+    await updateMovie(id, updated);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    return NextResponse.json({ error: `Bazaga saqlab bo'lmadi. ${msg}`.trim() }, { status: 500 });
+  }
+
+  revalidateAll(updated.type === "SERIAL" ? `/serial/${updated.slug}` : `/kino/${updated.slug}`);
+  return NextResponse.json({ ok: true, movie: updated });
+}
