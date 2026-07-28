@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
       {
+        // Admin yuklagan posterlar (Cloudflare R2)
         protocol: "https",
         hostname: "cdn.uzdub.com",
       },
