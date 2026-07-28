@@ -12,7 +12,7 @@ export default function YangiKinoPage() {
   const [form, setForm] = useState({
     title: "", originalTitle: "", type: "MOVIE", year: "", duration: "",
     country: "", language: "Ingliz", dubbing: "O'zbek", imdbRating: "",
-    description: "", posterUrl: "", backdropUrl: "", videoUrl: "", trailerUrl: "", status: "DRAFT",
+    description: "", shortDesc: "", posterUrl: "", backdropUrl: "", videoUrl: "", trailerUrl: "", status: "DRAFT",
     genres: [] as string[], isFeatured: false, isTrending: false, isPremium: false,
   });
   const [saved, setSaved] = useState(false);
@@ -42,22 +42,28 @@ export default function YangiKinoPage() {
       const res = await fetch("/api/ai-fill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: form.title, originalTitle: form.originalTitle, year: form.year }),
+        body: JSON.stringify({ title: form.title, originalTitle: form.originalTitle, year: form.year, type: form.type }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "AI xatosi");
       const d = json.data;
       setForm((p) => ({
         ...p,
-        description: d.description ?? p.description,
+        description: d.description || p.description,
+        shortDesc: d.shortDesc || p.shortDesc,
         type: d.type ?? p.type,
-        country: d.country ?? p.country,
-        language: d.language ?? p.language,
+        country: d.country || p.country,
+        language: d.language || p.language,
         dubbing: d.dubbing ?? p.dubbing,
         duration: d.duration != null ? String(d.duration) : p.duration,
         imdbRating: d.imdbRating != null ? String(d.imdbRating) : p.imdbRating,
+        posterUrl: d.posterUrl || p.posterUrl,
+        backdropUrl: d.backdropUrl || p.backdropUrl,
         genres: Array.isArray(d.genres) && d.genres.length ? d.genres.filter((g: string) => GENRES.includes(g)) : p.genres,
       }));
+      if (d.tmdbFound === false) {
+        setAiError("TMDB'da topilmadi — matn AI bilan to'ldirildi, poster yo'q. Nomni tekshiring yoki qo'lda yuklang.");
+      }
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "AI xatosi");
     } finally {

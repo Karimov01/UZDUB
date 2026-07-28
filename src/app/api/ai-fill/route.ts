@@ -1,42 +1,22 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { z } from "zod";
+import { fetchTmdb } from "@/lib/tmdb";
 
 export const runtime = "nodejs";
 
-// Admin formadagi janr tugmalari bilan bir xil ro'yxat
 const GENRES = [
   "Drama", "Harakatli", "Triller", "Ilmiy fantastika", "Fantastik", "Jinoyat",
   "Komediya", "Romantik", "Tarix", "Multfilm", "Dahshat", "Musiqa",
-] as const;
+];
 
-// AI qaytaradigan tuzilma — barcha maydonlar majburiy (strict output)
-const MovieInfo = z.object({
-  description: z.string().describe("Film/serial haqida 2-3 jumlali batafsil tavsif, o'zbek tilida"),
-  shortDesc: z.string().describe("Bir jumlali qisqa, jozibali tavsif (o'zbek tilida)"),
-  type: z.enum(["MOVIE", "SERIAL", "CARTOON", "DOCUMENTARY"]).describe("Kontent turi"),
-  country: z.string().describe("Ishlab chiqarilgan davlat, o'zbekcha (masalan: AQSh, Koreya)"),
-  language: z.string().describe("Asl til, o'zbekcha (masalan: Ingliz, Koreys)"),
-  dubbing: z.string().describe("Dublyaj tili, odatda: O'zbek"),
-  duration: z.number().int().describe("Davomiyligi daqiqada (serial uchun bir epizod)"),
-  imdbRating: z.number().describe("IMDb reytingi 0 dan 10 gacha (masalan 8.5)"),
-  genres: z.array(z.enum(GENRES)).describe("Ushbu ro'yxatdan mos janrlar"),
-});
-
-// Oddiy, eng-yaxshi-harakat (best-effort) IP bo'yicha rate limit.
-// Serverless muhitda instansiyalararo baham ko'rilmaydi — production uchun
-// Upstash Redis (@upstash/redis o'rnatilgan) yoki auth bilan almashtiring.
-const RATE_LIMIT = 8; // daqiqasiga so'rovlar
+// Best-effort IP rate limit
+const RATE_LIMIT = 12;
 const WINDOW_MS = 60_000;
 const hits = new Map<string, number[]>();
-
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const arr = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
   arr.push(now);
   hits.set(ip, arr);
-  // Xotira o'sishining oldini olish
   if (hits.size > 5000) hits.clear();
   return arr.length > RATE_LIMIT;
 }
@@ -44,81 +24,110 @@ function isRateLimited(ip: string): boolean {
 const clamp = (v: unknown, max: number): string =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
 
+async function askOpenRouter(prompt: string): Promise<Record<string, unknown> | null> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return null;
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+      "HTTP-Referer": "https://uzdub.com",
+      "X-Title": "UZDUB Play",
+    },
+    body: JSON.stringify({
+      model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
+      messages: [
+        { role: "system", content: "Sen kino ma'lumotlar eksperti va professional o'zbek tarjimonisan. Faqat to'g'ri JSON qaytarasan." },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 900,
+      temperature: 0.5,
+    }),
+  });
+  if (!res.ok) return null;
+  const j = await res.json();
+  const content = j.choices?.[0]?.message?.content;
+  if (!content) return null;
+  try {
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY sozlanmagan. .env.local fayliga kalitni qo'shing." },
-      { status: 500 }
-    );
-  }
-
-  // So'rov hajmini cheklash (katta payload'lardan himoya)
-  const contentLength = Number(req.headers.get("content-length") ?? 0);
-  if (contentLength > 10_000) {
-    return NextResponse.json({ error: "So'rov juda katta" }, { status: 413 });
-  }
-
-  // Rate limit (IP proxy sarlavhalaridan)
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     req.headers.get("x-real-ip") ||
     "unknown";
   if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Juda ko'p so'rov. Bir daqiqadan so'ng qayta urinib ko'ring." },
-      { status: 429 }
-    );
+    return NextResponse.json({ error: "Juda ko'p so'rov. Bir daqiqadan so'ng urinib ko'ring." }, { status: 429 });
   }
 
-  let raw: { title?: unknown; originalTitle?: unknown; year?: unknown };
+  if (!process.env.OPENROUTER_API_KEY) {
+    return NextResponse.json({ error: "OPENROUTER_API_KEY sozlanmagan (.env.local)." }, { status: 500 });
+  }
+
+  let raw: { title?: unknown; originalTitle?: unknown; year?: unknown; type?: unknown };
   try {
     raw = await req.json();
   } catch {
     return NextResponse.json({ error: "Noto'g'ri so'rov" }, { status: 400 });
   }
 
-  // Kirishlarni tozalash va cheklash
   const title = clamp(raw.title, 200);
   const originalTitle = clamp(raw.originalTitle, 200);
+  const type = clamp(raw.type, 20) || "MOVIE";
   const yearNum = Number(raw.year);
   const year = Number.isFinite(yearNum) && yearNum >= 1870 && yearNum <= 2100 ? String(yearNum) : "";
-
   if (!title && !originalTitle) {
-    return NextResponse.json(
-      { error: "Kamida nomi yoki asl nomini kiriting" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Kamida nomi yoki asl nomini kiriting" }, { status: 400 });
   }
 
-  const client = new Anthropic();
+  // 1) TMDB — real ma'lumot va poster (asl nomdan afzal qidiramiz)
+  const tmdb = await fetchTmdb(originalTitle || title, year, type);
 
+  // 2) OpenRouter — o'zbekcha tavsif, SEO va janrlarni moslashtirish
   const prompt = [
-    "Sen kino ma'lumotlar bazasi bo'yicha ekspertsan. Quyidagi film yoki serial haqida ma'lumot ber.",
-    "Barcha matnli maydonlarni O'ZBEK TILIDA to'ldir.",
-    `Nomi: ${title || "(noma'lum)"}`,
-    originalTitle ? `Asl nomi: ${originalTitle}` : "",
-    year ? `Yili: ${year}` : "",
-    "Agar aniq bilmasang, eng yaqin va ishonchli taxminni ber. Janrlarni faqat berilgan ro'yxatdan tanla.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `Film/serial: ${title || originalTitle}${year ? ` (${year})` : ""}${originalTitle ? ` — asl nomi: ${originalTitle}` : ""}.`,
+    tmdb.found
+      ? `TMDB ma'lumoti (inglizcha):\nSyujet: ${tmdb.overview}\nJanrlar: ${(tmdb.genres || []).join(", ")}\nDavlat: ${tmdb.country}\nTil: ${tmdb.language}`
+      : "TMDB'da topilmadi — o'z bilimingdan foydalanib to'ldir.",
+    "",
+    "Quyidagi JSON'ni QAYTAR (barcha matn O'ZBEK TILIDA, SEO uchun boy va tabiiy):",
+    "{",
+    '  "description": "2-4 jumlali batafsil, SEO-optimallashtirilgan o\'zbekcha tavsif (kalit so\'zlar tabiiy joylashtirilgan)",',
+    '  "shortDesc": "1 jumlali qisqa, jozibali o\'zbekcha tavsif",',
+    `  "genres": ["faqat shu ro'yxatdan mos janrlar: ${GENRES.join(", ")}"],`,
+    '  "country": "o\'zbekcha davlat nomi (masalan: AQSh, Janubiy Koreya)",',
+    '  "language": "o\'zbekcha til nomi (masalan: Ingliz, Koreys)"',
+    "}",
+  ].join("\n");
 
-  try {
-    const message = await client.messages.parse({
-      model: "claude-opus-5",
-      max_tokens: 2048,
-      thinking: { type: "adaptive" },
-      output_config: { format: zodOutputFormat(MovieInfo) },
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    if (message.stop_reason === "refusal") {
-      return NextResponse.json({ error: "AI so'rovni bajara olmadi" }, { status: 422 });
-    }
-
-    return NextResponse.json({ data: message.parsed_output });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "AI xatosi";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  const ai = await askOpenRouter(prompt);
+  if (!ai) {
+    return NextResponse.json({ error: "AI javob bermadi. Keyinroq urinib ko'ring." }, { status: 502 });
   }
+
+  const aiGenres = Array.isArray(ai.genres) ? (ai.genres as string[]).filter((g) => GENRES.includes(g)) : [];
+
+  const data = {
+    description: typeof ai.description === "string" ? ai.description : "",
+    shortDesc: typeof ai.shortDesc === "string" ? ai.shortDesc : "",
+    genres: aiGenres,
+    country: typeof ai.country === "string" ? ai.country : tmdb.country || "",
+    language: typeof ai.language === "string" ? ai.language : tmdb.language || "",
+    dubbing: "O'zbek",
+    type,
+    // TMDB'dan real qiymatlar
+    duration: tmdb.runtime ?? undefined,
+    imdbRating: tmdb.rating ?? undefined,
+    posterUrl: tmdb.posterUrl ?? undefined,
+    backdropUrl: tmdb.backdropUrl ?? undefined,
+    tmdbFound: tmdb.found,
+  };
+
+  return NextResponse.json({ data });
 }
