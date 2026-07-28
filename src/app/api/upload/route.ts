@@ -63,7 +63,7 @@ export async function POST(req: Request) {
   // --- Cloudflare R2 (production) ---
   const r2 = r2Config();
   if (r2) {
-    const key = `uploads/${filename}`;
+    const key = `Uzdub_play_Data/${filename}`;
     try {
       await r2.client.send(
         new PutObjectCommand({
