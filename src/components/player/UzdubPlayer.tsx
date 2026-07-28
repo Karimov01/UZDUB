@@ -26,9 +26,10 @@ function getPlayerCtor(): PlayerCtor | null {
   }
 }
 
-// Skriptlar KETMA-KET yuklanishi shart (bir-biriga bog'liq)
+// Skriptlar bir-biriga bog'liq. Hammasini birdan qo'shamiz (async=false —
+// parallel yuklab, tartib bilan bajaradi -> tez ochiladi). HLS lokal (CDN emas).
 const SCRIPTS = [
-  "https://cdn.jsdelivr.net/npm/hls.js@1",
+  "/player/hls.min.js",
   "/player/player.utils.js",
   "/player/player.ui.js",
   "/player/player.sources.js",
@@ -41,22 +42,30 @@ const SCRIPTS = [
 let scriptsPromise: Promise<void> | null = null;
 function loadScripts(): Promise<void> {
   if (scriptsPromise) return scriptsPromise;
-  scriptsPromise = SCRIPTS.reduce(
-    (chain, src) =>
-      chain.then(
-        () =>
-          new Promise<void>((resolve, reject) => {
-            if (document.querySelector(`script[src="${src}"]`)) return resolve();
-            const s = document.createElement("script");
-            s.src = src;
-            s.async = false;
-            s.onload = () => resolve();
-            s.onerror = () => reject(new Error(`Player skript yuklanmadi: ${src}`));
-            document.head.appendChild(s);
-          })
-      ),
-    Promise.resolve()
-  );
+  scriptsPromise = new Promise<void>((resolve, reject) => {
+    let remaining = SCRIPTS.length;
+    let failed = false;
+    const done = () => {
+      if (!failed && --remaining === 0) resolve();
+    };
+    SCRIPTS.forEach((src) => {
+      const existing = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
+      if (existing) {
+        // Allaqachon qo'shilgan
+        done();
+        return;
+      }
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = false; // parallel yuklab, DOM tartibida bajaradi
+      s.onload = done;
+      s.onerror = () => {
+        failed = true;
+        reject(new Error(`Player skript yuklanmadi: ${src}`));
+      };
+      document.head.appendChild(s);
+    });
+  });
   return scriptsPromise;
 }
 
