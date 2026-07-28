@@ -2,14 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Plus, Heart, Star, Eye, Film, Calendar, Globe, Mic, Tv } from "lucide-react";
+import { Play, Plus, Heart, Star, Eye, Film, Calendar, Globe, Mic, Tv, Check } from "lucide-react";
 import { formatViewCount } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { fadeInUp, staggerChildren } from "@/lib/animations";
 import MovieCard from "@/components/movie/MovieCard";
 import { DEMO_MOVIES } from "@/lib/demo-data";
+import { useSavedList } from "@/hooks/useSavedList";
 import type { Movie } from "@/types/movie";
 
 const EPISODES = [
@@ -27,6 +29,28 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
   const similar = DEMO_MOVIES.filter(
     (m) => m.id !== serial.id && m.type === "SERIAL" && m.genres?.some((g) => serial.genres?.some((sg) => sg.id === g.id))
   ).slice(0, 6);
+
+  const [views, setViews] = useState(serial.viewCount ?? 0);
+  const fav = useSavedList("favorites");
+  const later = useSavedList("watchLater");
+  const isFav = fav.has(serial.id);
+  const isLater = later.has(serial.id);
+
+  useEffect(() => {
+    const k = `uzdub_viewed_${serial.id}`;
+    try {
+      if (sessionStorage.getItem(k)) return;
+      sessionStorage.setItem(k, "1");
+    } catch {
+      /* ignore */
+    }
+    fetch(`/api/public/view/${serial.id}`, { method: "POST" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.count === "number") setViews(d.count);
+      })
+      .catch(() => {});
+  }, [serial.id]);
 
   return (
     <div style={{ background: "var(--bg-primary)" }}>
@@ -75,12 +99,10 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
                   <span className="text-xs text-gray-400">IMDb</span>
                 </div>
               )}
-              {serial.viewCount !== undefined && (
-                <div className="flex items-center gap-1 text-gray-400 text-sm">
-                  <Eye className="h-4 w-4" />
-                  {formatViewCount(serial.viewCount)} ko&apos;rildi
-                </div>
-              )}
+              <div className="flex items-center gap-1 text-gray-400 text-sm">
+                <Eye className="h-4 w-4" />
+                {formatViewCount(views)} ko&apos;rildi
+              </div>
             </motion.div>
 
             <motion.p variants={fadeInUp} className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
@@ -109,8 +131,24 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
               <Link href={`/serial/${serial.slug}/tomosha`}>
                 <Button size="lg"><Play className="h-5 w-5 fill-white" />Ko&apos;rishni boshlash</Button>
               </Link>
-              <Button variant="secondary" size="lg"><Heart className="h-5 w-5" />Sevimli</Button>
-              <Button variant="secondary" size="lg"><Plus className="h-5 w-5" />Keyin ko&apos;raman</Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => fav.toggle(serial.id)}
+                style={isFav ? { background: "rgba(236,72,153,0.15)", borderColor: "rgba(236,72,153,0.5)", color: "#EC4899" } : undefined}
+              >
+                <Heart className={isFav ? "h-5 w-5 fill-current" : "h-5 w-5"} />
+                {isFav ? "Sevimlida" : "Sevimli"}
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => later.toggle(serial.id)}
+                style={isLater ? { background: "rgba(124,58,237,0.15)", borderColor: "rgba(124,58,237,0.5)", color: "#A78BFA" } : undefined}
+              >
+                {isLater ? <Check className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                {isLater ? "Ro'yxatda" : "Keyin ko'raman"}
+              </Button>
             </motion.div>
           </motion.div>
         </div>

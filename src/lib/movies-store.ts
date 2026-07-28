@@ -72,3 +72,15 @@ export async function deleteMovie(id: string): Promise<boolean> {
   const rows = (await sql`DELETE FROM movies WHERE id = ${id} RETURNING id`) as unknown[];
   return rows.length > 0;
 }
+
+export async function incrementView(id: string): Promise<number | null> {
+  await ensureTable();
+  const sql = db();
+  const rows = (await sql`
+    UPDATE movies
+    SET data = jsonb_set(data, '{viewCount}', (COALESCE((data->>'viewCount')::int, 0) + 1)::text::jsonb)
+    WHERE id = ${id}
+    RETURNING (data->>'viewCount')::int AS count
+  `) as { count: number }[];
+  return rows[0]?.count ?? null;
+}
