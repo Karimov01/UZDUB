@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Save, Trash2, Loader2, Video } from "lucide-react";
 import type { Movie } from "@/types/movie";
+import EpisodeManager, { type EpisodeForm } from "@/components/admin/EpisodeManager";
 
 const GENRES = ["Drama", "Harakatli", "Triller", "Ilmiy fantastika", "Fantastik", "Jinoyat", "Komediya", "Romantik", "Tarix", "Multfilm", "Dahshat", "Musiqa"];
 
@@ -31,6 +32,15 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
     isFeatured: !!movie.isFeatured,
     isTrending: !!movie.isTrending,
     isPremium: !!movie.isPremium,
+    episodes: (movie.episodes ?? []).map((e): EpisodeForm => ({
+      id: e.id,
+      season: String(e.season ?? 1),
+      episode: String(e.episode ?? 1),
+      title: e.title ?? "",
+      description: e.description ?? "",
+      videoUrl: e.videoUrl ?? "",
+      duration: e.duration ? String(e.duration) : "",
+    })),
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -55,6 +65,17 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
           year: form.year ? Number(form.year) : undefined,
           duration: form.duration ? Number(form.duration) : undefined,
           imdbRating: form.imdbRating ? Number(form.imdbRating) : undefined,
+          episodes: form.type === "SERIAL"
+            ? form.episodes.map((e) => ({
+                id: e.id,
+                season: Number(e.season) || 1,
+                episode: Number(e.episode) || 1,
+                title: e.title,
+                description: e.description,
+                videoUrl: e.videoUrl,
+                duration: e.duration ? Number(e.duration) : undefined,
+              }))
+            : [],
         }),
       });
       const json = await res.json();
@@ -189,6 +210,15 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
               ))}
             </div>
           </div>
+
+          {form.type === "SERIAL" && (
+            <EpisodeManager
+              episodes={form.episodes}
+              onChange={(eps) => set("episodes", eps)}
+              serialTitle={form.title}
+              originalTitle={form.originalTitle}
+            />
+          )}
         </div>
 
         <div className="space-y-5">

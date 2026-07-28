@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import type { Movie, ContentType, ContentStatus } from "@/types/movie";
 import { getMovie, updateMovie, deleteMovie } from "@/lib/movies-store";
-import { MovieInput, mapGenres } from "@/lib/movie-input";
+import { MovieInput, mapGenres, mapEpisodes } from "@/lib/movie-input";
 
 export const runtime = "nodejs";
 
@@ -81,6 +81,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     isTrending: d.isTrending,
     isPremium: d.isPremium,
     genres: mapGenres(d.genres),
+    episodes: mapEpisodes(d.episodes, id),
   };
 
   try {

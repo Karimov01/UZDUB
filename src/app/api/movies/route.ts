@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import type { Movie, ContentType, ContentStatus } from "@/types/movie";
 import { readMovies, addMovie, slugExists } from "@/lib/movies-store";
-import { MovieInput, mapGenres, slugify } from "@/lib/movie-input";
+import { MovieInput, mapGenres, mapEpisodes, slugify } from "@/lib/movie-input";
 
 export const runtime = "nodejs";
 
@@ -35,8 +35,9 @@ export async function POST(req: Request) {
     slug = `${base}-${i++}`;
   }
 
+  const id = randomUUID();
   const movie: Movie = {
-    id: randomUUID(),
+    id,
     slug,
     title: d.title,
     originalTitle: d.originalTitle || undefined,
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
     isTrending: d.isTrending,
     isPremium: d.isPremium,
     genres: mapGenres(d.genres),
+    episodes: mapEpisodes(d.episodes, id),
   };
 
   try {

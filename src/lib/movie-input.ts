@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { Genre } from "@/types/movie";
+import { randomUUID } from "crypto";
+import type { Genre, Episode } from "@/types/movie";
 
 // Admin formadagi janr nomlari -> slug (demo-data bilan mos)
 export const GENRE_SLUGS: Record<string, string> = {
@@ -54,6 +55,36 @@ export const MovieInput = z.object({
   isFeatured: z.boolean().optional().default(false),
   isTrending: z.boolean().optional().default(false),
   isPremium: z.boolean().optional().default(false),
+  episodes: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        season: z.coerce.number().int().min(1).max(100).optional().default(1),
+        episode: z.coerce.number().int().min(1).max(1000),
+        title: z.string().trim().max(200).optional().default(""),
+        description: z.string().trim().max(3000).optional().default(""),
+        videoUrl: z.string().trim().max(2000).optional().default(""),
+        duration: z.coerce.number().int().min(0).max(100000).optional(),
+      })
+    )
+    .max(1000)
+    .optional()
+    .default([]),
 });
 
 export type MovieInputData = z.infer<typeof MovieInput>;
+
+// Forma qismlarini to'liq Episode obyektlariga aylantirish
+export function mapEpisodes(input: MovieInputData["episodes"], movieId: string): Episode[] {
+  return (input ?? []).map((e) => ({
+    id: e.id || randomUUID(),
+    movieId,
+    season: e.season ?? 1,
+    episode: e.episode,
+    title: e.title || `${e.episode}-qism`,
+    description: e.description || undefined,
+    videoUrl: e.videoUrl || undefined,
+    duration: e.duration,
+    viewCount: 0,
+  }));
+}
