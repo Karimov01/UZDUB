@@ -14,17 +14,6 @@ import { DEMO_MOVIES } from "@/lib/demo-data";
 import { useSavedList } from "@/hooks/useSavedList";
 import type { Movie } from "@/types/movie";
 
-const EPISODES = [
-  { ep: 1, title: "Pilot", duration: 58 },
-  { ep: 2, title: "Yangi boshlanish", duration: 52 },
-  { ep: 3, title: "Haqiqat", duration: 60 },
-  { ep: 4, title: "Sinov", duration: 55 },
-  { ep: 5, title: "Qaror", duration: 63 },
-  { ep: 6, title: "Burilish", duration: 57 },
-  { ep: 7, title: "Sirlar ochiladi", duration: 61 },
-  { ep: 8, title: "Yakuniy jang", duration: 70 },
-];
-
 export default function SerialDetail({ serial }: { serial: Movie }) {
   const similar = DEMO_MOVIES.filter(
     (m) => m.id !== serial.id && m.type === "SERIAL" && m.genres?.some((g) => serial.genres?.some((sg) => sg.id === g.id))
@@ -35,6 +24,10 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
   const later = useSavedList("watchLater");
   const isFav = fav.has(serial.id);
   const isLater = later.has(serial.id);
+
+  const episodes = serial.episodes && serial.episodes.length > 0
+    ? [...serial.episodes].sort((a, b) => (a.season - b.season) || (a.episode - b.episode))
+    : [];
 
   useEffect(() => {
     const k = `uzdub_viewed_${serial.id}`;
@@ -155,27 +148,29 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
       </div>
 
       {/* Episodes */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-        <h2 className="text-xl font-bold text-white mb-5" style={{ fontFamily: "var(--font-display)" }}>
-          1-mavsum &bull; Qismlar
-        </h2>
-        <div className="space-y-3">
-          {EPISODES.map((ep) => (
-            <Link key={ep.ep} href={`/serial/${serial.slug}/tomosha?ep=${ep.ep}`}>
-              <div className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:bg-white/5" style={{ border: "1px solid var(--border)" }}>
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 font-bold text-white" style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>
-                  {ep.ep}
+      {episodes.length > 0 && (
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
+          <h2 className="text-xl font-bold text-white mb-5" style={{ fontFamily: "var(--font-display)" }}>
+            Qismlar ({episodes.length})
+          </h2>
+          <div className="space-y-3">
+            {episodes.map((ep) => (
+              <Link key={ep.id} href={`/serial/${serial.slug}/tomosha?ep=${ep.episode}`}>
+                <div className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:bg-white/5" style={{ border: "1px solid var(--border)" }}>
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 font-bold text-white" style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>
+                    {ep.episode}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-white">{ep.episode}-qism{ep.title ? `: ${ep.title}` : ""}</p>
+                    {ep.duration && <p className="text-sm" style={{ color: "var(--text-muted)" }}>{ep.duration} daqiqa</p>}
+                  </div>
+                  <Play className="h-5 w-5 shrink-0" style={{ color: "var(--accent-violet)" }} />
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-white">{ep.ep}-qism: {ep.title}</p>
-                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>{ep.duration} daqiqa</p>
-                </div>
-                <Play className="h-5 w-5 shrink-0" style={{ color: "var(--accent-violet)" }} />
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Similar serials */}
       {similar.length > 0 && (
