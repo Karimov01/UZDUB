@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Save, Image as ImageIcon, Sparkles, Loader2, Upload, X, Video } from "lucide-react";
@@ -20,11 +20,13 @@ export default function YangiKinoPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [uploadingKey, setUploadingKey] = useState<"posterUrl" | "backdropUrl" | null>(null);
+  const [genresAvailable, setGenresAvailable] = useState(GENRES);
 
   const posterInputRef = useRef<HTMLInputElement>(null);
   const backdropInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
+  useEffect(() => { fetch("/api/genres").then((r) => r.json()).then((data) => { if (Array.isArray(data.genres) && data.genres.length) setGenresAvailable(data.genres.map((genre: { name: string }) => genre.name)); }).catch(() => {}); }, []);
 
   const toggleGenre = (g: string) => {
     set("genres", form.genres.includes(g) ? form.genres.filter((x) => x !== g) : [...form.genres, g]);
@@ -59,7 +61,7 @@ export default function YangiKinoPage() {
         imdbRating: d.imdbRating != null ? String(d.imdbRating) : p.imdbRating,
         posterUrl: d.posterUrl || p.posterUrl,
         backdropUrl: d.backdropUrl || p.backdropUrl,
-        genres: Array.isArray(d.genres) && d.genres.length ? d.genres.filter((g: string) => GENRES.includes(g)) : p.genres,
+        genres: Array.isArray(d.genres) && d.genres.length ? d.genres.filter((g: string) => genresAvailable.includes(g)) : p.genres,
       }));
       if (d.tmdbFound === false) {
         setAiError("TMDB'da topilmadi — matn AI bilan to'ldirildi, poster yo'q. Nomni tekshiring yoki qo'lda yuklang.");
@@ -282,7 +284,7 @@ export default function YangiKinoPage() {
           <div className="p-5 rounded-2xl" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
             <h3 className="font-semibold text-white text-sm mb-4" style={{ fontFamily: "var(--font-display)" }}>Janrlar</h3>
             <div className="flex flex-wrap gap-2">
-              {GENRES.map((g) => (
+              {genresAvailable.map((g) => (
                 <button
                   key={g}
                   onClick={() => toggleGenre(g)}

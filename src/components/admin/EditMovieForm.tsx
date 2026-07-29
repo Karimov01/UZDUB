@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Save, Trash2, Loader2, Video } from "lucide-react";
+import { ChevronLeft, Save, Trash2, Loader2, Video, Upload, X } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import EpisodeManager, { type EpisodeForm } from "@/components/admin/EpisodeManager";
 
@@ -46,10 +46,20 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<"posterUrl" | "backdropUrl" | null>(null);
+  const [genresAvailable, setGenresAvailable] = useState(GENRES);
+  const posterInputRef = useRef<HTMLInputElement>(null);
+  const backdropInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
   const toggleGenre = (g: string) =>
     set("genres", form.genres.includes(g) ? form.genres.filter((x) => x !== g) : [...form.genres, g]);
+  useEffect(() => { fetch("/api/genres").then((response) => response.json()).then((data) => { if (Array.isArray(data.genres) && data.genres.length) setGenresAvailable(data.genres.map((genre: { name: string }) => genre.name)); }).catch(() => {}); }, []);
+  const handleFile = (key: "posterUrl" | "backdropUrl") => async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]; if (!file || !file.type.startsWith("image/")) { setError("Faqat rasm faylini tanlang"); return; }
+    const reader = new FileReader(); reader.onload = () => set(key, reader.result as string); reader.readAsDataURL(file); setUploadingKey(key); setError("");
+    try { const data = new FormData(); data.append("file", file); const response = await fetch("/api/upload", { method: "POST", body: data }); const json = await response.json(); if (!response.ok) throw new Error(json.error || "Rasm yuklanmadi"); set(key, json.url); } catch (error) { setError(error instanceof Error ? error.message : "Rasm yuklanmadi"); } finally { setUploadingKey(null); }
+  };
 
   const handleSave = async () => {
     if (!editable) return;
@@ -202,7 +212,7 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
           <div className="p-5 rounded-2xl" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
             <h3 className="font-semibold text-white text-sm mb-4">Janrlar</h3>
             <div className="flex flex-wrap gap-2">
-              {GENRES.map((g) => (
+              {genresAvailable.map((g) => (
                 <button key={g} type="button" onClick={() => toggleGenre(g)} className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                   style={{ background: form.genres.includes(g) ? "linear-gradient(135deg, #7C3AED, #EC4899)" : "var(--bg-primary)", color: form.genres.includes(g) ? "#fff" : "var(--text-muted)", border: form.genres.includes(g) ? "none" : "1px solid var(--border)" }}>
                   {g}
@@ -223,18 +233,21 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
 
         <div className="space-y-5">
           <div className="p-5 rounded-2xl space-y-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h3 className="font-semibold text-white text-sm">Rasmlar (havola)</h3>
+            <h3 className="font-semibold text-white text-sm">Rasmlar</h3>
             <div>
-              <label className="block text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>Poster URL</label>
-              <input className={inputClass} style={inputStyle} placeholder="https://..." value={form.posterUrl} onChange={(e) => set("posterUrl", e.target.value)} />
+              <label className="block text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>Poster (kompyuterdan yuklash)</label>
+              <input ref={posterInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile("posterUrl")} />
+              <button type="button" onClick={() => posterInputRef.current?.click()} className="w-full px-3 py-2 rounded-xl text-sm flex items-center justify-center gap-2" style={{ border: "1px dashed var(--border)", color: "var(--text-muted)" }}><Upload className="h-4 w-4" />{uploadingKey === "posterUrl" ? "Yuklanmoqda..." : "Poster tanlash"}</button>
               {form.posterUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.posterUrl} alt="poster" className="mt-2 w-full aspect-[2/3] object-cover rounded-lg" onError={(e) => (e.currentTarget.style.display = "none")} />
+                <div className="relative"><img src={form.posterUrl} alt="poster" className="mt-2 w-full aspect-[2/3] object-cover rounded-lg" onError={(e) => (e.currentTarget.style.display = "none")} /><button type="button" onClick={() => set("posterUrl", "")} className="absolute right-2 top-2 p-1 rounded bg-red-500 text-white"><X className="h-3.5 w-3.5" /></button></div>
               )}
             </div>
             <div>
-              <label className="block text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>Backdrop URL</label>
-              <input className={inputClass} style={inputStyle} placeholder="https://..." value={form.backdropUrl} onChange={(e) => set("backdropUrl", e.target.value)} />
+              <label className="block text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>Backdrop (kompyuterdan yuklash)</label>
+              <input ref={backdropInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile("backdropUrl")} />
+              <button type="button" onClick={() => backdropInputRef.current?.click()} className="w-full px-3 py-2 rounded-xl text-sm flex items-center justify-center gap-2" style={{ border: "1px dashed var(--border)", color: "var(--text-muted)" }}><Upload className="h-4 w-4" />{uploadingKey === "backdropUrl" ? "Yuklanmoqda..." : "Backdrop tanlash"}</button>
+              {form.backdropUrl && <div className="relative"><img src={form.backdropUrl} alt="backdrop" className="mt-2 w-full aspect-video object-cover rounded-lg" /><button type="button" onClick={() => set("backdropUrl", "")} className="absolute right-2 top-2 p-1 rounded bg-red-500 text-white"><X className="h-3.5 w-3.5" /></button></div>}
             </div>
           </div>
 

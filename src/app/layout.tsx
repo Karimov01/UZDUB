@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import JsonLd from "@/components/seo/JsonLd";
+import { Analytics } from "@vercel/analytics/next";
 import { APP_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_LOCALE } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -96,6 +97,7 @@ export default function RootLayout({
       <body className="min-h-full antialiased flex flex-col">
         <JsonLd data={siteJsonLd} />
         <ConditionalLayout>{children}</ConditionalLayout>
+        <Analytics />
       </body>
     </html>
   );
