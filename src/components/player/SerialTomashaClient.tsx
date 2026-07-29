@@ -84,11 +84,11 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
             <List className="h-4 w-4" style={{ color: "var(--accent-violet)" }} />
             <span className="text-sm font-semibold text-white">Qismlar ({eps.length})</span>
           </div>
-          <div className="flex flex-wrap gap-2 p-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid var(--border)" }}>
+          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 p-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid var(--border)" }}>
             {eps.map((ep) => (
               <Link key={ep.id} href={`/serial/${serial.slug}/qism/${ep.season}/${ep.episode}`}>
                 <div
-                  className="h-10 min-w-10 px-3 rounded-xl flex items-center justify-center text-sm font-bold transition-all hover:-translate-y-0.5 hover:text-white"
+                  className="h-10 w-full rounded-xl flex items-center justify-center text-sm font-bold transition-all hover:-translate-y-0.5 hover:text-white"
                   style={{
                     background: ep.episode === currentEp.episode
                       ? "linear-gradient(135deg, #A855F7, #6D28D9)"
