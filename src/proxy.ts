@@ -28,5 +28,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/ai-fill", "/api/ai-fill-episode", "/api/upload", "/api/movies/:path*", "/api/settings"],
+  matcher: ["/admin/:path*", "/api/ai-fill", "/api/ai-fill-episode", "/api/upload", "/api/movies/:path*", "/api/settings", "/api/genres/:path*"],
 };

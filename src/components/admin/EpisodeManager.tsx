@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Sparkles, Loader2, Film } from "lucide-react";
+import { Plus, Trash2, Sparkles, Loader2, Film, ArrowDown, ArrowUp, Eye } from "lucide-react";
 
 export interface EpisodeForm {
   id?: string;
@@ -42,6 +42,13 @@ export default function EpisodeManager({
   };
 
   const remove = (i: number) => onChange(episodes.filter((_, idx) => idx !== i));
+  const move = (i: number, direction: -1 | 1) => {
+    const target = i + direction;
+    if (target < 0 || target >= episodes.length) return;
+    const next = [...episodes];
+    [next[i], next[target]] = [next[target], next[i]];
+    onChange(next.map((episode, index) => ({ ...episode, episode: String(index + 1) })));
+  };
 
   const aiFill = async (i: number) => {
     setAiIndex(i);
@@ -101,6 +108,10 @@ export default function EpisodeManager({
         {episodes.map((ep, i) => (
           <div key={ep.id ?? i} className="p-3 rounded-xl" style={{ background: "var(--bg-primary)", border: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-col gap-1 mt-4">
+                <button type="button" aria-label="Yuqoriga" onClick={() => move(i, -1)} disabled={i === 0} className="p-1 rounded disabled:opacity-30" style={{ color: "var(--accent-violet)" }}><ArrowUp className="h-3.5 w-3.5" /></button>
+                <button type="button" aria-label="Pastga" onClick={() => move(i, 1)} disabled={i === episodes.length - 1} className="p-1 rounded disabled:opacity-30" style={{ color: "var(--accent-violet)" }}><ArrowDown className="h-3.5 w-3.5" /></button>
+              </div>
               <div className="w-14">
                 <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Mavsum</label>
                 <input className={inputClass} style={inputStyle} type="number" value={ep.season} onChange={(e) => update(i, "season", e.target.value)} />
@@ -141,6 +152,7 @@ export default function EpisodeManager({
               <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Tavsif</label>
               <textarea className={inputClass} style={{ ...inputStyle, minHeight: 56, resize: "vertical" }} placeholder="Qism tavsifi (AI to'ldirishi mumkin)" value={ep.description} onChange={(e) => update(i, "description", e.target.value)} />
             </div>
+            {ep.id && <p className="mt-2 flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Eye className="h-3 w-3" /> Qism ko&apos;rishlari alohida hisoblanadi.</p>}
           </div>
         ))}
       </div>

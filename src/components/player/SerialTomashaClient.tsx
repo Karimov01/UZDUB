@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, List, VideoOff } from "lucide-react";
+import { ChevronLeft, Eye, List, VideoOff } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { Movie, Episode } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
 
@@ -18,6 +19,12 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
 
   const currentEp = eps.find((e) => e.episode === epNum && (initialSeason === undefined || e.season === initialSeason)) ?? eps[0];
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
+  const [episodeViews, setEpisodeViews] = useState(currentEp.viewCount ?? 0);
+  useEffect(() => {
+    const key = `uzdub_episode_viewed_${currentEp.id}`;
+    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { return; }
+    fetch(`/api/public/episode-view/${serial.id}/${currentEp.id}`, { method: "POST" }).then((response) => response.json()).then((data) => { if (typeof data.count === "number") setEpisodeViews(data.count); }).catch(() => {});
+  }, [currentEp.id, serial.id]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#000" }}>
@@ -53,6 +60,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
             {[serial.year, serial.country, serial.dubbing && `${serial.dubbing} tilida`, currentEp.duration && `${currentEp.duration} daqiqa`].filter(Boolean).join(" • ")}
           </p>
         )}
+        <p className="flex items-center gap-1 text-xs mb-4" style={{ color: "var(--text-muted)" }}><Eye className="h-3.5 w-3.5" /> {episodeViews} marta ko&apos;rildi</p>
         {currentEp.description && (
           <p className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{currentEp.description}</p>
         )}

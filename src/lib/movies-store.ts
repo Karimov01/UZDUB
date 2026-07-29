@@ -48,6 +48,19 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   await sql`INSERT INTO app_settings (setting_key, data, updated_at) VALUES ('site', ${JSON.stringify(settings)}::jsonb, now()) ON CONFLICT (setting_key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`;
 }
 
+export type StoredGenre = { id: string; name: string; slug: string; color?: string };
+export async function readGenres(): Promise<StoredGenre[]> {
+  await ensureTable(); const sql = db();
+  return (await sql`SELECT id, name, slug, color FROM genres ORDER BY name ASC`) as StoredGenre[];
+}
+export async function saveGenre(genre: StoredGenre): Promise<void> {
+  await ensureTable(); const sql = db();
+  await sql`INSERT INTO genres (id, name, slug, color) VALUES (${genre.id}, ${genre.name}, ${genre.slug}, ${genre.color ?? null}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, color = EXCLUDED.color`;
+}
+export async function deleteGenre(id: string): Promise<boolean> {
+  await ensureTable(); const sql = db(); const rows = await sql`DELETE FROM genres WHERE id = ${id} RETURNING id` as unknown[]; return rows.length > 0;
+}
+
 export async function readMovies(): Promise<Movie[]> {
   await ensureTable();
   const sql = db();
@@ -105,4 +118,12 @@ export async function incrementView(id: string): Promise<number | null> {
     RETURNING (data->>'viewCount')::int AS count
   `) as { count: number }[];
   return rows[0]?.count ?? null;
+}
+
+export async function incrementEpisodeView(movieId: string, episodeId: string): Promise<number | null> {
+  const movie = await getMovie(movieId);
+  if (!movie?.episodes) return null;
+  const episodes = movie.episodes.map((episode) => episode.id === episodeId ? { ...episode, viewCount: (episode.viewCount ?? 0) + 1 } : episode);
+  await updateMovie(movieId, { ...movie, episodes });
+  return episodes.find((episode) => episode.id === episodeId)?.viewCount ?? null;
 }

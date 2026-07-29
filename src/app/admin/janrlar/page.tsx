@@ -1,25 +1,17 @@
-import type { Metadata } from "next";
-import { Tag } from "lucide-react";
-import { getAllMovies } from "@/lib/movies";
-
-export const metadata: Metadata = { title: "Janrlar" };
-
-const COLORS = ["#7C3AED", "#EC4899", "#06B6D4", "#F59E0B", "#10B981", "#EF4444", "#8B5CF6", "#F97316"];
-
-export default async function JanrlarAdminPage() {
-  const movies = await getAllMovies();
-  const map = new Map<string, { name: string; slug: string; count: number }>();
-  movies.forEach((movie) => movie.genres?.forEach((genre) => {
-    const current = map.get(genre.slug);
-    map.set(genre.slug, { name: genre.name, slug: genre.slug, count: (current?.count ?? 0) + 1 });
-  }));
-  const genres = [...map.values()].sort((a, b) => b.count - a.count);
-
-  return <div>
-    <div className="mb-6"><h1 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-display)" }}>Janrlar</h1><p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{genres.length} ta janr — Neon bazasidagi kontentdan hisoblangan</p></div>
-    {genres.length ? <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{genres.map((genre, index) => {
-      const color = COLORS[index % COLORS.length];
-      return <div key={genre.slug} className="p-4 rounded-2xl" style={{ background: `${color}12`, border: `1px solid ${color}33` }}><div className="p-2 rounded-lg w-fit mb-3" style={{ background: `${color}25` }}><Tag className="h-4 w-4" style={{ color }} /></div><h3 className="font-semibold text-white mb-1">{genre.name}</h3><p className="text-xs" style={{ color: "var(--text-muted)" }}>{genre.count} ta kontent</p><p className="text-xs mt-1" style={{ color }}>/{genre.slug}</p></div>;
-    })}</div> : <div className="p-8 rounded-2xl text-center" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>Hali kontent qo&apos;shilmagan. Kino yoki serial saqlangach janrlar shu yerda avtomatik ko&apos;rinadi.</div>}
+"use client";
+import { useEffect, useState } from "react";
+import { Edit3, Plus, Tag, Trash2, X } from "lucide-react";
+type Genre = { id: string; name: string; slug: string; color?: string };
+const empty = { name: "", slug: "", color: "#7C3AED" };
+export default function JanrlarAdminPage() {
+  const [genres, setGenres] = useState<Genre[]>([]); const [form, setForm] = useState(empty); const [editing, setEditing] = useState<string | null>(null); const [error, setError] = useState("");
+  const load = () => fetch("/api/genres").then((r) => r.json()).then((d) => setGenres(d.genres ?? [])).catch(() => setError("Janrlar yuklanmadi"));
+  useEffect(() => { void load(); }, []);
+  const submit = async () => { setError(""); const url = editing ? `/api/genres/${editing}` : "/api/genres"; const response = await fetch(url, { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); const data = await response.json(); if (!response.ok) { setError(data.error ?? "Xatolik yuz berdi"); return; } setForm(empty); setEditing(null); load(); };
+  const edit = (genre: Genre) => { setEditing(genre.id); setForm({ name: genre.name, slug: genre.slug, color: genre.color ?? "#7C3AED" }); };
+  const remove = async (id: string) => { if (!confirm("Janr o'chirilsinmi? Kontentdagi mavjud janr nomlari saqlanib qoladi.")) return; await fetch(`/api/genres/${id}`, { method: "DELETE" }); load(); };
+  return <div><div className="flex flex-wrap items-center justify-between gap-4 mb-6"><div><h1 className="text-2xl font-bold text-white">Janrlar</h1><p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Janrlarni qo&apos;shish, tahrirlash va o&apos;chirish</p></div><button onClick={() => { setEditing(null); setForm(empty); }} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white" style={{ background: "linear-gradient(135deg,#7C3AED,#EC4899)" }}><Plus className="h-4 w-4" />Yangi janr</button></div>
+    <div className="p-4 rounded-2xl mb-6 grid grid-cols-1 sm:grid-cols-[1fr_1fr_120px_auto] gap-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}><input placeholder="Janr nomi" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="px-3 py-2 rounded-xl text-white bg-transparent outline-none" style={{ border: "1px solid var(--border)" }} /><input placeholder="slug (ixtiyoriy)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="px-3 py-2 rounded-xl text-white bg-transparent outline-none" style={{ border: "1px solid var(--border)" }} /><input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="w-full h-10 rounded-xl" /><button onClick={submit} className="px-4 rounded-xl text-white" style={{ background: "linear-gradient(135deg,#7C3AED,#EC4899)" }}>{editing ? "Saqlash" : "Qo'shish"}</button>{editing && <button onClick={() => { setEditing(null); setForm(empty); }} className="sm:col-start-4 flex justify-center"><X /></button>}</div>{error && <p className="text-red-400 mb-4">{error}</p>}
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{genres.map((genre) => <div key={genre.id} className="p-4 rounded-2xl" style={{ background: `${genre.color ?? "#7C3AED"}12`, border: `1px solid ${genre.color ?? "#7C3AED"}44` }}><div className="flex justify-between mb-3"><Tag className="h-5 w-5" style={{ color: genre.color }} /><div className="flex gap-2"><button onClick={() => edit(genre)}><Edit3 className="h-4 w-4 text-violet-400" /></button><button onClick={() => remove(genre.id)}><Trash2 className="h-4 w-4 text-red-400" /></button></div></div><h2 className="font-semibold text-white">{genre.name}</h2><p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>/{genre.slug}</p></div>)}</div>
   </div>;
 }

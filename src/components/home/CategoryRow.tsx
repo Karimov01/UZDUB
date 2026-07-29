@@ -9,7 +9,7 @@ import MovieCard from "@/components/movie/MovieCard";
 import type { Movie } from "@/types/movie";
 
 interface CategoryRowProps {
-  title: string;
+  title: React.ReactNode;
   href?: string;
   movies: Movie[];
   cardSize?: "sm" | "md" | "lg";

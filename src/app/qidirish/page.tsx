@@ -1,102 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Filter, Search, X } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import MovieCard from "@/components/movie/MovieCard";
 
 export default function QidirishPage() {
-  const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState<Movie[]>([]);
-
-  // Barcha (nashr etilgan) kinolarni ochiq API'dan olamiz — baza + demo
-  useEffect(() => {
-    fetch("/api/public/movies")
-      .then((r) => (r.ok ? r.json() : { movies: [] }))
-      .then((d) => setMovies(Array.isArray(d.movies) ? d.movies : []))
-      .catch(() => {});
-  }, []);
-
-  const results = query.trim().length > 1
-    ? movies.filter((m) =>
-        m.title.toLowerCase().includes(query.toLowerCase()) ||
-        m.originalTitle?.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
-
-  return (
-    <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-10">
-      <h1 className="text-3xl font-bold text-white mb-6" style={{ fontFamily: "var(--font-display)" }}>
-        Qidiruv
-      </h1>
-
-      {/* Search input */}
-      <div
-        className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-8"
-        style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-hover)" }}
-      >
-        <Search className="h-5 w-5 shrink-0" style={{ color: "var(--accent-violet)" }} />
-        <input
-          autoFocus
-          type="text"
-          placeholder="Kino yoki serial nomini kiriting..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent outline-none text-white placeholder-gray-500 text-base"
-        />
-        {query && (
-          <button onClick={() => setQuery("")}>
-            <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
-          </button>
-        )}
-      </div>
-
-      {/* Results */}
-      {query.trim().length > 1 && (
-        <>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-            &quot;{query}&quot; uchun {results.length} ta natija
-          </p>
-          {results.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {results.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">🎬</div>
-              <p className="text-lg font-medium text-white mb-2">Natija topilmadi</p>
-              <p style={{ color: "var(--text-muted)" }}>Boshqa so&apos;z bilan qayta urinib ko&apos;ring</p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Trending searches */}
-      {query.trim().length <= 1 && (
-        <div>
-          <p className="text-sm font-medium mb-4" style={{ color: "var(--text-muted)" }}>
-            Trend qidiruvlar
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {["Interstellar", "Breaking Bad", "Duna", "Inception", "Squid Game", "Oppenheimer"].map((term) => (
-              <button
-                key={term}
-                onClick={() => setQuery(term)}
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/10"
-                style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const [query, setQuery] = useState(""); const [movies, setMovies] = useState<Movie[]>([]);
+  const [type, setType] = useState("ALL"); const [genre, setGenre] = useState("ALL"); const [year, setYear] = useState("ALL");
+  useEffect(() => { fetch("/api/public/movies").then((r) => r.ok ? r.json() : { movies: [] }).then((d) => setMovies(Array.isArray(d.movies) ? d.movies : [])).catch(() => {}); }, []);
+  const genres = Array.from(new Set(movies.flatMap((movie) => movie.genres?.map((item) => item.name) ?? []))).sort();
+  const years = Array.from(new Set(movies.map((movie) => movie.year).filter((item): item is number => typeof item === "number"))).sort((a, b) => b - a);
+  const hasFilters = type !== "ALL" || genre !== "ALL" || year !== "ALL";
+  const results = movies.filter((movie) => (query.trim().length < 2 || movie.title.toLowerCase().includes(query.toLowerCase()) || movie.originalTitle?.toLowerCase().includes(query.toLowerCase())) && (type === "ALL" || movie.type === type) && (genre === "ALL" || movie.genres?.some((item) => item.name === genre)) && (year === "ALL" || movie.year === Number(year)));
+  return <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-10"><h1 className="text-3xl font-bold text-white mb-6" style={{ fontFamily: "var(--font-display)" }}>Qidiruv</h1>
+    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-hover)" }}><Search className="h-5 w-5 shrink-0 text-violet-400" /><input autoFocus placeholder="Kino yoki serial nomini kiriting..." value={query} onChange={(e) => setQuery(e.target.value)} className="flex-1 bg-transparent outline-none text-white placeholder-gray-500 text-base" />{query && <button onClick={() => setQuery("")}><X className="h-5 w-5" /></button>}</div>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-7"><label className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}><Filter className="h-4 w-4 text-violet-400" /><select value={type} onChange={(e) => setType(e.target.value)} className="flex-1 bg-transparent outline-none text-white"><option value="ALL">Kino va serial</option><option value="MOVIE">Faqat kino</option><option value="SERIAL">Faqat serial</option></select></label><select value={genre} onChange={(e) => setGenre(e.target.value)} className="px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}><option value="ALL">Barcha janrlar</option>{genres.map((item) => <option key={item} value={item}>{item}</option>)}</select><select value={year} onChange={(e) => setYear(e.target.value)} className="px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}><option value="ALL">Barcha yillar</option>{years.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+    {(query.trim().length > 1 || hasFilters) ? <><p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>{results.length} ta natija</p>{results.length ? <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">{results.map((movie) => <MovieCard key={movie.id} movie={movie} />)}</div> : <EmptySearch />}</> : <div className="text-center py-16 rounded-2xl" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}><Search className="h-12 w-12 mx-auto mb-4 text-violet-400" /><p className="text-lg font-medium text-white">Qidirishni boshlang</p><p className="mt-2" style={{ color: "var(--text-muted)" }}>Nom, janr, yil yoki tur bo&apos;yicha toping.</p></div>}</div>;
 }
+function EmptySearch() { return <div className="text-center py-16"><Search className="h-12 w-12 mx-auto mb-4 text-violet-400" /><p className="text-lg font-medium text-white mb-2">Kino topilmadi</p><p style={{ color: "var(--text-muted)" }}>Filtrlarni o&apos;zgartirib qayta urinib ko&apos;ring.</p></div>; }
