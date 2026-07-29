@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Play, PlayCircle, MessageCircle, Globe } from "lucide-react";
+import LiveInternetCounter from "@/components/analytics/LiveInternetCounter";
 
 const footerLinks = {
   Kontent: [
@@ -107,9 +108,7 @@ export default function Footer() {
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             © 2025 UZDUB Play. Barcha huquqlar himoyalangan.
           </p>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            O&apos;zbekiston, Toshkent
-          </p>
+          <div className="flex items-center gap-3"><p className="text-xs" style={{ color: "var(--text-muted)" }}>O&apos;zbekiston, Toshkent</p><LiveInternetCounter /></div>
         </div>
       </div>
     </footer>
