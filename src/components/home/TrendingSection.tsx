@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Star, Eye } from "lucide-react";
+import { Star, Eye, Flame } from "lucide-react";
 import { fadeInUp, staggerChildren } from "@/lib/animations";
 import { formatViewCount } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
@@ -25,7 +25,10 @@ export default function TrendingSection({ movies }: TrendingSectionProps) {
         className="text-xl md:text-2xl font-bold text-white mb-5"
         style={{ fontFamily: "var(--font-display)" }}
       >
-        🔥 Bugungi Trendlar
+        <span className="inline-flex items-center gap-2">
+          <Flame className="h-5 w-5 md:h-6 md:w-6 text-orange-400" />
+          Bugungi Trendlar
+        </span>
       </motion.h2>
 
       <motion.div
