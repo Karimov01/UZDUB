@@ -20,6 +20,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   const currentEp = eps.find((e) => e.episode === epNum && (initialSeason === undefined || e.season === initialSeason)) ?? eps[0];
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
   const [episodeViews, setEpisodeViews] = useState(currentEp.viewCount ?? 0);
+  const [showIndicator, setShowIndicator] = useState(true);
   useEffect(() => {
     const key = `uzdub_episode_viewed_${currentEp.id}`;
     try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { return; }
@@ -41,7 +42,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
       <div className="w-full max-w-[1120px] mx-auto px-3 md:px-0 pt-5 md:pt-8">
         <div className="relative rounded-2xl md:rounded-3xl p-px" style={{ background: "linear-gradient(135deg, rgba(192,132,252,0.9), rgba(124,58,237,0.15) 42%, rgba(236,72,153,0.75))", boxShadow: "0 0 22px rgba(124,58,237,0.42), 0 0 65px rgba(139,92,246,0.18)" }}>
           <div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%, rgba(168,85,247,0.46), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,0.28), transparent 48%)" }} />
-          <div className="relative overflow-hidden rounded-[15px] md:rounded-[23px] bg-black">
+          <div className="relative overflow-hidden rounded-[15px] md:rounded-[23px] bg-black" onPointerDownCapture={() => setShowIndicator(false)}>
         {videoSrc ? (
           <UzdubPlayer key={currentEp.id} src={videoSrc} poster={serial.backdropUrl || serial.posterUrl} />
         ) : (
@@ -51,13 +52,13 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>Admin panelda ushbu qismga video havolasini qo&apos;shing</p>
           </div>
         )}
-        <div
+        {showIndicator && <div
           className="absolute left-3 top-3 md:left-5 md:top-5 z-10 flex items-center gap-2.5 rounded-2xl p-2 pr-4 backdrop-blur-xl"
           style={{ background: "linear-gradient(135deg, rgba(20,12,35,0.9), rgba(12,12,20,0.82))", border: "1px solid rgba(196,132,252,0.75)", boxShadow: "0 0 22px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.14)" }}
         >
-          <div className="h-14 w-14 md:h-16 md:w-16 rounded-xl flex items-center justify-center text-3xl md:text-4xl font-black text-white" style={{ background: "linear-gradient(145deg, #a855f7, #4c1d95 60%, #16052d)", boxShadow: "inset 0 1px 10px rgba(255,255,255,0.3), 0 5px 16px rgba(96,33,180,0.65)", fontFamily: "var(--font-display)" }}>{currentEp.episode}</div>
+          <div className="h-11 w-11 md:h-16 md:w-16 rounded-lg md:rounded-xl flex items-center justify-center text-2xl md:text-4xl font-black text-white" style={{ background: "linear-gradient(145deg, #a855f7, #4c1d95 60%, #16052d)", boxShadow: "inset 0 1px 10px rgba(255,255,255,0.3), 0 5px 16px rgba(96,33,180,0.65)", fontFamily: "var(--font-display)" }}>{currentEp.episode}</div>
           <div className="leading-tight"><p className="text-sm md:text-base font-bold text-white">{currentEp.episode}-qism</p><p className="text-[11px] md:text-xs mt-1" style={{ color: "#d8b4fe" }}>Jami {eps.length}-qism</p></div>
-        </div>
+        </div>}
           </div>
         </div>
       </div>
