@@ -12,6 +12,7 @@ import { fadeInUp, staggerChildren } from "@/lib/animations";
 import MovieCard from "@/components/movie/MovieCard";
 import { DEMO_MOVIES } from "@/lib/demo-data";
 import { useSavedList } from "@/hooks/useSavedList";
+import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
 
 export default function SerialDetail({ serial }: { serial: Movie }) {
@@ -98,9 +99,13 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
               </div>
             </motion.div>
 
-            <motion.p variants={fadeInUp} className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>
-              {serial.description}
-            </motion.p>
+            <motion.div variants={fadeInUp} className="mb-4">
+              <ExpandableText
+                text={serial.description}
+                className="text-sm leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              />
+            </motion.div>
 
             {/* Meta */}
             <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-2 mb-5">

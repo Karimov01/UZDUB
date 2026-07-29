@@ -12,6 +12,7 @@ import { fadeInUp, staggerChildren } from "@/lib/animations";
 import MovieCard from "@/components/movie/MovieCard";
 import { DEMO_MOVIES } from "@/lib/demo-data";
 import { useSavedList } from "@/hooks/useSavedList";
+import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
 
 export default function KinoDetail({ movie }: { movie: Movie }) {
@@ -99,9 +100,13 @@ export default function KinoDetail({ movie }: { movie: Movie }) {
               </div>
             </motion.div>
 
-            <motion.p variants={fadeInUp} className="text-base leading-relaxed mb-6 max-w-xl" style={{ color: "var(--text-secondary)" }}>
-              {movie.description}
-            </motion.p>
+            <motion.div variants={fadeInUp} className="mb-6 max-w-xl">
+              <ExpandableText
+                text={movie.description}
+                className="text-base leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              />
+            </motion.div>
 
             {/* Meta grid */}
             <motion.div variants={fadeInUp} className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
