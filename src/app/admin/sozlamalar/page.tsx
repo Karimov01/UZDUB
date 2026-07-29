@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Save, Globe, Bell, Shield, Palette } from "lucide-react";
 
 function Toggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
@@ -24,10 +24,25 @@ export default function SozlamalarPage() {
     maxUploadSize: "500", watermarkEnabled: true,
   });
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((response) => response.json())
+      .then((data) => { if (data.settings) setSettings(data.settings); else setError(data.error ?? "Sozlamalarni yuklab bo'lmadi"); })
+      .catch(() => setError("Sozlamalarni yuklab bo'lmadi"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const set = (key: string, value: unknown) => setSettings((p) => ({ ...p, [key]: value }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setError("");
+    const response = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+    const data = await response.json();
+    if (!response.ok) { setError(data.error ?? "Sozlamalarni saqlab bo'lmadi"); return; }
+    setSettings(data.settings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -51,6 +66,8 @@ export default function SozlamalarPage() {
           {saved ? "Saqlandi!" : "Saqlash"}
         </button>
       </div>
+      {loading && <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Sozlamalar bazadan yuklanmoqda...</p>}
+      {error && <p className="text-sm mb-4 text-red-400">{error}</p>}
 
       <div className="space-y-5">
         {/* General */}

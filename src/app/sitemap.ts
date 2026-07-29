@@ -36,5 +36,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...genreRoutes, ...contentRoutes];
+  // Har bir serial qismi ham mustaqil SEO manziliga ega.
+  const episodeRoutes: MetadataRoute.Sitemap = movies.flatMap((serial) =>
+    serial.type === "SERIAL"
+      ? (serial.episodes ?? []).map((episode) => ({
+          url: `${SITE_URL}/serial/${serial.slug}/qism/${episode.season}/${episode.episode}`,
+          lastModified: now,
+          changeFrequency: "weekly" as const,
+          priority: 0.7,
+        }))
+      : []
+  );
+
+  return [...staticRoutes, ...genreRoutes, ...contentRoutes, ...episodeRoutes];
 }

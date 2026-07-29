@@ -1,18 +1,15 @@
 import { cache } from "react";
 import type { Movie } from "@/types/movie";
-import { DEMO_MOVIES } from "@/lib/demo-data";
 import { readMovies } from "@/lib/movies-store";
 
 // Baza + demo kinolar. React cache — bir render ichida bitta DB o'qish.
 // Baza uzilgan bo'lsa ham demo bilan ishlayveradi (try/catch).
 const loadAll = cache(async (): Promise<Movie[]> => {
-  let db: Movie[] = [];
   try {
-    db = await readMovies();
+    return await readMovies();
   } catch {
-    db = [];
+    return [];
   }
-  return [...db, ...DEMO_MOVIES];
 });
 
 /** Barcha kinolar (barcha status) — admin uchun. */

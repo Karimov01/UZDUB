@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getSerialBySlug } from "@/lib/movies";
+import { getPublishedMovies, getSerialBySlug } from "@/lib/movies";
 import SerialDetail from "@/components/movie/SerialDetail";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildMovieMetadata, buildMovieJsonLd } from "@/lib/seo";
@@ -18,10 +18,11 @@ export default async function SerialPage({ params }: { params: Promise<{ slug: s
   const { slug } = await params;
   const serial = await getSerialBySlug(slug);
   if (!serial) notFound();
+  const allMovies = await getPublishedMovies();
   return (
     <>
       <JsonLd data={buildMovieJsonLd(serial)} />
-      <SerialDetail serial={serial} />
+      <SerialDetail serial={serial} similarMovies={allMovies} />
     </>
   );
 }

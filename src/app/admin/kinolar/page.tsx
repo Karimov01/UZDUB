@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Plus, Search, Edit, Trash2, Eye, Star, Filter } from "lucide-react";
-import { DEMO_MOVIES } from "@/lib/demo-data";
 import { formatViewCount } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 
@@ -33,7 +32,7 @@ function KinolarTable() {
       .then((d) => setDbMovies(Array.isArray(d.movies) ? d.movies : []))
       .catch(() => {});
   }, []);
-  const allMovies = [...dbMovies, ...DEMO_MOVIES];
+  const allMovies = dbMovies;
 
   const handleDelete = async (m: Movie) => {
     if (!confirm(`"${m.title}" o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.`)) return;

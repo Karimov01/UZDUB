@@ -1,26 +1,28 @@
 import type { Metadata } from "next";
 import { Film, Tv, Users, Eye, TrendingUp, Star, Clock, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { DEMO_MOVIES, DEMO_KINOLAR, DEMO_SERIALS } from "@/lib/demo-data";
+import { getAllMovies } from "@/lib/movies";
 import { formatViewCount } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-const totalViews = DEMO_MOVIES.reduce((s, m) => s + (m.viewCount ?? 0), 0);
-const avgRating = (DEMO_MOVIES.reduce((s, m) => s + (m.imdbRating ?? 0), 0) / DEMO_MOVIES.length).toFixed(1);
-const topMovie = [...DEMO_MOVIES].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))[0];
-const recent = [...DEMO_MOVIES].slice(-6).reverse();
-
-const stats = [
-  { label: "Jami kinolar", value: DEMO_KINOLAR.length, icon: Film, color: "#7C3AED", change: "+3 bu oy" },
-  { label: "Jami seriallar", value: DEMO_SERIALS.length, icon: Tv, color: "#EC4899", change: "+2 bu oy" },
-  { label: "Jami ko'rishlar", value: formatViewCount(totalViews), icon: Eye, color: "#06B6D4", change: "+12% bu hafta" },
-  { label: "O'rtacha reyting", value: avgRating, icon: Star, color: "#F59E0B", change: "IMDb bo'yicha" },
-  { label: "Foydalanuvchilar", value: "4,823", icon: Users, color: "#10B981", change: "+187 bu oy" },
-  { label: "Bugungi sessiyalar", value: "1,247", icon: TrendingUp, color: "#8B5CF6", change: "+5% kecha" },
-];
-
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const allMovies = await getAllMovies();
+  const movies = allMovies.filter((movie) => movie.type !== "SERIAL");
+  const serials = allMovies.filter((movie) => movie.type === "SERIAL");
+  const totalViews = allMovies.reduce((sum, movie) => sum + (movie.viewCount ?? 0), 0);
+  const rated = allMovies.filter((movie) => movie.imdbRating !== undefined);
+  const avgRating = rated.length ? (rated.reduce((sum, movie) => sum + (movie.imdbRating ?? 0), 0) / rated.length).toFixed(1) : "—";
+  const topMovie = [...allMovies].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))[0];
+  const recent = allMovies.slice(0, 6);
+  const stats = [
+    { label: "Jami kinolar", value: movies.length, icon: Film, color: "#7C3AED", change: "Haqiqiy baza" },
+    { label: "Jami seriallar", value: serials.length, icon: Tv, color: "#EC4899", change: "Haqiqiy baza" },
+    { label: "Jami ko'rishlar", value: formatViewCount(totalViews), icon: Eye, color: "#06B6D4", change: "Haqiqiy baza" },
+    { label: "O'rtacha reyting", value: avgRating, icon: Star, color: "#F59E0B", change: "IMDb bo'yicha" },
+    { label: "Foydalanuvchilar", value: "—", icon: Users, color: "#10B981", change: "Telegram login kutilmoqda" },
+    { label: "Bugungi sessiyalar", value: "—", icon: TrendingUp, color: "#8B5CF6", change: "Analitika ulanmagan" },
+  ];
   return (
     <div>
       {/* Header */}
@@ -79,7 +81,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
           <div className="space-y-3">
-            {recent.map((movie) => (
+            {recent.length ? recent.map((movie) => (
               <div key={movie.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/3 transition-all" style={{ border: "1px solid var(--border)" }}>
                 <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0" style={{ background: "var(--bg-tertiary)" }}>
                   {movie.posterUrl && (
@@ -120,7 +122,7 @@ export default function AdminDashboard() {
                   </Link>
                 </div>
               </div>
-            ))}
+            )) : <p className="text-sm py-6 text-center" style={{ color: "var(--text-muted)" }}>Bazaga hali kontent qo'shilmagan.</p>}
           </div>
         </div>
 
@@ -131,7 +133,7 @@ export default function AdminDashboard() {
             <h2 className="font-semibold text-white mb-4" style={{ fontFamily: "var(--font-display)" }}>
               🏆 Eng ko&apos;p ko&apos;rilgan
             </h2>
-            <div className="flex gap-3">
+            {topMovie ? <div className="flex gap-3">
               <div className="w-16 h-24 rounded-lg overflow-hidden shrink-0" style={{ background: "var(--bg-tertiary)" }}>
                 {topMovie.posterUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -156,7 +158,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> : <p className="text-sm" style={{ color: "var(--text-muted)" }}>Eng ko'p ko'rilgan kontent hali yo'q.</p>}
           </div>
 
           {/* Quick actions */}

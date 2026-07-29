@@ -7,8 +7,8 @@ import { APP_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_LOCALE } from
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "UZDUB Play — O'zbekistonning Premium Kino Platformasi",
-    template: "%s — UZDUB Play",
+    default: "UZDUB Play | O'zbekistonning premium kino platformasi",
+    template: "%s | UZDUB Play",
   },
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,
@@ -35,12 +35,12 @@ export const metadata: Metadata = {
     locale: SITE_LOCALE,
     url: SITE_URL,
     siteName: APP_NAME,
-    title: "UZDUB Play — O'zbekistonning Premium Kino Platformasi",
+    title: "UZDUB Play | O'zbekistonning premium kino platformasi",
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "UZDUB Play — O'zbekistonning Premium Kino Platformasi",
+    title: "UZDUB Play | O'zbekistonning premium kino platformasi",
     description: SITE_DESCRIPTION,
   },
   verification: {

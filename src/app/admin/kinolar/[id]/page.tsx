@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMovie } from "@/lib/movies-store";
-import { DEMO_MOVIES } from "@/lib/demo-data";
 import EditMovieForm from "@/components/admin/EditMovieForm";
 
 export const metadata: Metadata = { title: "Tahrirlash" };
@@ -15,10 +14,8 @@ export default async function EditKinoPage({ params }: { params: Promise<{ id: s
   } catch {
     dbMovie = undefined;
   }
-  const demoMovie = DEMO_MOVIES.find((m) => m.id === id);
-  const movie = dbMovie ?? demoMovie;
-  if (!movie) notFound();
+  if (!dbMovie) notFound();
 
   // Faqat bazadagi kinolar tahrirlanadi (demo — namuna)
-  return <EditMovieForm movie={movie} editable={!!dbMovie} />;
+  return <EditMovieForm movie={dbMovie} editable />;
 }

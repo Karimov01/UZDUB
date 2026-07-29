@@ -14,16 +14,38 @@ let ready: Promise<unknown> | null = null;
 function ensureTable() {
   if (!ready) {
     const sql = db();
-    ready = sql`
-      CREATE TABLE IF NOT EXISTS movies (
-        id TEXT PRIMARY KEY,
-        slug TEXT UNIQUE NOT NULL,
-        data JSONB NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT now()
-      )
-    `;
+    ready = Promise.all([
+      sql`CREATE TABLE IF NOT EXISTS movies (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, data JSONB NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`,
+      sql`CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT now())`,
+      sql`CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
+    ]);
   }
   return ready;
+}
+
+export type AppSettings = {
+  siteName: string; siteDesc: string; maintenanceMode: boolean; registrationOpen: boolean;
+  emailNotifications: boolean; pushNotifications: boolean; defaultLanguage: string;
+  contentPerPage: string; maxUploadSize: string; watermarkEnabled: boolean;
+};
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  siteName: "UZDUB Play", siteDesc: "O'zbekistonning premium kino va serial platformasi",
+  maintenanceMode: false, registrationOpen: true, emailNotifications: true, pushNotifications: false,
+  defaultLanguage: "uz", contentPerPage: "24", maxUploadSize: "500", watermarkEnabled: true,
+};
+
+export async function readSettings(): Promise<AppSettings> {
+  await ensureTable();
+  const sql = db();
+  const rows = await sql`SELECT data FROM app_settings WHERE setting_key = 'site' LIMIT 1` as { data: Partial<AppSettings> }[];
+  return { ...DEFAULT_SETTINGS, ...(rows[0]?.data ?? {}) };
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  await ensureTable();
+  const sql = db();
+  await sql`INSERT INTO app_settings (setting_key, data, updated_at) VALUES ('site', ${JSON.stringify(settings)}::jsonb, now()) ON CONFLICT (setting_key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`;
 }
 
 export async function readMovies(): Promise<Movie[]> {

@@ -6,9 +6,9 @@ import { ChevronLeft, List, VideoOff } from "lucide-react";
 import type { Movie, Episode } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
 
-export default function SerialTomashaClient({ serial }: { serial: Movie }) {
+export default function SerialTomashaClient({ serial, initialSeason, initialEpisode }: { serial: Movie; initialSeason?: number; initialEpisode?: number }) {
   const searchParams = useSearchParams();
-  const epNum = parseInt(searchParams.get("ep") ?? "1");
+  const epNum = parseInt(searchParams.get("ep") ?? String(initialEpisode ?? "1"));
 
   // Haqiqiy qismlar (admin qo'shgan). Bo'lmasa — serialning o'z videosidan bitta qism
   const eps: Episode[] =
@@ -16,7 +16,7 @@ export default function SerialTomashaClient({ serial }: { serial: Movie }) {
       ? [...serial.episodes].sort((a, b) => (a.season - b.season) || (a.episode - b.episode))
       : [{ id: "1", movieId: serial.id, season: 1, episode: 1, title: "1-qism", videoUrl: serial.videoUrl, duration: serial.duration, viewCount: 0 }];
 
-  const currentEp = eps.find((e) => e.episode === epNum) ?? eps[0];
+  const currentEp = eps.find((e) => e.episode === epNum && (initialSeason === undefined || e.season === initialSeason)) ?? eps[0];
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
 
   return (
@@ -65,7 +65,7 @@ export default function SerialTomashaClient({ serial }: { serial: Movie }) {
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
             {eps.map((ep) => (
-              <Link key={ep.id} href={`/serial/${serial.slug}/tomosha?ep=${ep.episode}`}>
+              <Link key={ep.id} href={`/serial/${serial.slug}/qism/${ep.season}/${ep.episode}`}>
                 <div
                   className="h-10 w-full rounded-lg flex items-center justify-center text-sm font-bold transition-all hover:scale-105"
                   style={{

@@ -10,13 +10,12 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { fadeInUp, staggerChildren } from "@/lib/animations";
 import MovieCard from "@/components/movie/MovieCard";
-import { DEMO_MOVIES } from "@/lib/demo-data";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
 
-export default function SerialDetail({ serial }: { serial: Movie }) {
-  const similar = DEMO_MOVIES.filter(
+export default function SerialDetail({ serial, similarMovies = [] }: { serial: Movie; similarMovies?: Movie[] }) {
+  const similar = similarMovies.filter(
     (m) => m.id !== serial.id && m.type === "SERIAL" && m.genres?.some((g) => serial.genres?.some((sg) => sg.id === g.id))
   ).slice(0, 6);
 
@@ -160,7 +159,7 @@ export default function SerialDetail({ serial }: { serial: Movie }) {
           </h2>
           <div className="space-y-3">
             {episodes.map((ep) => (
-              <Link key={ep.id} href={`/serial/${serial.slug}/tomosha?ep=${ep.episode}`}>
+              <Link key={ep.id} href={`/serial/${serial.slug}/qism/${ep.season}/${ep.episode}`}>
                 <div className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:bg-white/5" style={{ border: "1px solid var(--border)" }}>
                   <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 font-bold text-white" style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>
                     {ep.episode}

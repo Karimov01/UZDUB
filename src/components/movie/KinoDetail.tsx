@@ -10,13 +10,12 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { fadeInUp, staggerChildren } from "@/lib/animations";
 import MovieCard from "@/components/movie/MovieCard";
-import { DEMO_MOVIES } from "@/lib/demo-data";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
 
-export default function KinoDetail({ movie }: { movie: Movie }) {
-  const similar = DEMO_MOVIES.filter(
+export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie; similarMovies?: Movie[] }) {
+  const similar = similarMovies.filter(
     (m) => m.id !== movie.id && m.genres?.some((g) => movie.genres?.some((mg) => mg.id === g.id))
   ).slice(0, 6);
 

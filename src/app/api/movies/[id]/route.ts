@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import type { Movie, ContentType, ContentStatus } from "@/types/movie";
 import { getMovie, updateMovie, deleteMovie } from "@/lib/movies-store";
 import { MovieInput, mapGenres, mapEpisodes } from "@/lib/movie-input";
+import { createAutomaticSeo } from "@/lib/seo";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   const d = parsed.data;
 
+  const seo = createAutomaticSeo({ title: d.title, year: d.year, type: d.type as ContentType, shortDesc: d.shortDesc, description: d.description });
   const updated: Movie = {
     ...existing,
     id,
@@ -80,6 +82,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     isFeatured: d.isFeatured,
     isTrending: d.isTrending,
     isPremium: d.isPremium,
+    ...seo,
     genres: mapGenres(d.genres),
     episodes: mapEpisodes(d.episodes, id),
   };

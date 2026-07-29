@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import type { Movie, ContentType, ContentStatus } from "@/types/movie";
 import { readMovies, addMovie, slugExists } from "@/lib/movies-store";
 import { MovieInput, mapGenres, mapEpisodes, slugify } from "@/lib/movie-input";
+import { createAutomaticSeo } from "@/lib/seo";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
   }
 
   const id = randomUUID();
+  const seo = createAutomaticSeo({ title: d.title, year: d.year, type: d.type as ContentType, shortDesc: d.shortDesc, description: d.description });
   const movie: Movie = {
     id,
     slug,
@@ -59,6 +61,7 @@ export async function POST(req: Request) {
     isFeatured: d.isFeatured,
     isTrending: d.isTrending,
     isPremium: d.isPremium,
+    ...seo,
     genres: mapGenres(d.genres),
     episodes: mapEpisodes(d.episodes, id),
   };
