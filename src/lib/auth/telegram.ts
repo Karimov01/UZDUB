@@ -35,7 +35,7 @@ export function hashCompletionCode(code: string) { return sha256(code); }
 export async function sendTelegramMessage(chatId: string, text: string, completionCode?: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error("TELEGRAM_BOT_TOKEN sozlanmagan");
-  const reply_markup = completionCode ? { inline_keyboard: [[{ text: "🌐 Saytga qaytish", url: completionUrl(completionCode) }]] } : undefined;
+  const reply_markup = completionCode ? { inline_keyboard: [[{ text: "Saytga kirish", url: completionUrl(completionCode) }]] } : undefined;
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text, reply_markup }) });
 }
 
