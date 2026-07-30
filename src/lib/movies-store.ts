@@ -31,6 +31,7 @@ function ensureTable() {
 export type TelegramProfile = { telegramId: string; firstName: string; lastName?: string; username?: string; languageCode?: string; photoUrl?: string };
 export type SubscriptionType = "FREE" | "PREMIUM";
 export type StoredUser = { id: string; telegramId: string; telegramUsername?: string; firstName: string; lastName?: string; telegramPhotoUrl?: string; role: string; subscriptionType: SubscriptionType; premiumExpiresAt?: string; isActive: boolean; createdAt: string; lastLoginAt: string };
+export type UserStats = { total: number; free: number; premium: number; admins: number };
 
 export async function createTelegramLoginRequest(id: string, tokenHash: string, expiresAt: Date): Promise<void> {
   await ensureTable(); const sql = db();
@@ -98,6 +99,12 @@ export async function replaceTelegramCompletion(loginRequestId: string, completi
 export async function readUsers(): Promise<StoredUser[]> {
   await ensureTable(); const sql = db();
   return await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users ORDER BY created_at DESC` as StoredUser[];
+}
+
+export async function getUserStats(): Promise<UserStats> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`SELECT COUNT(*) FILTER (WHERE is_active) ::int AS total, COUNT(*) FILTER (WHERE is_active AND subscription_type = 'FREE') ::int AS free, COUNT(*) FILTER (WHERE is_active AND subscription_type = 'PREMIUM') ::int AS premium, COUNT(*) FILTER (WHERE role = 'ADMIN') ::int AS admins FROM users` as UserStats[];
+  return rows[0] ?? { total: 0, free: 0, premium: 0, admins: 0 };
 }
 
 export async function getUserProfile(id: string): Promise<StoredUser | undefined> {
