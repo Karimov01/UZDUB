@@ -8,11 +8,15 @@ export const authConfig: NextAuthConfig = {
   trustHost: true,
   callbacks: {
     jwt({ token, user }) {
-      if (user?.id) token.id = user.id;
+      if (user?.id) {
+        token.id = user.id;
+        token.sub = user.id;
+      }
       return token;
     },
     session({ session, token }) {
-      if (session.user && typeof token.id === "string") session.user.id = token.id;
+      const userId = typeof token.id === "string" ? token.id : token.sub;
+      if (session.user && typeof userId === "string") session.user.id = userId;
       return session;
     },
   },
