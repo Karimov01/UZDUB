@@ -16,7 +16,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const code = typeof creds?.code === "string" ? creds.code : "";
         if (!code) return null;
         const user = await consumeTelegramCompletion(hashCompletionCode(code));
-        if (!user || !user.isActive) return null;
+        if (!user || !user.isActive) {
+          console.error("[telegram-auth] Tasdiqlash kodi uchun foydalanuvchi topilmadi yoki akkaunt faol emas", { codePresent: Boolean(code), userFound: Boolean(user), active: user?.isActive ?? false });
+          return null;
+        }
         return { id: user.id, name: [user.firstName, user.lastName].filter(Boolean).join(" "), image: user.telegramPhotoUrl, email: null };
       },
     }),
