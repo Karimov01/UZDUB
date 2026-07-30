@@ -18,15 +18,19 @@ function ensureTable() {
       sql`CREATE TABLE IF NOT EXISTS movies (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, data JSONB NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
-      sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, telegram_id TEXT UNIQUE NOT NULL, telegram_username TEXT, first_name TEXT NOT NULL, last_name TEXT, language_code TEXT, telegram_photo_url TEXT, role TEXT NOT NULL DEFAULT 'USER', is_active BOOLEAN NOT NULL DEFAULT true, telegram_verified BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
+      sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, telegram_id TEXT UNIQUE NOT NULL, telegram_username TEXT, first_name TEXT NOT NULL, last_name TEXT, language_code TEXT, telegram_photo_url TEXT, role TEXT NOT NULL DEFAULT 'USER', subscription_type TEXT NOT NULL DEFAULT 'FREE', premium_expires_at TIMESTAMPTZ, is_active BOOLEAN NOT NULL DEFAULT true, telegram_verified BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT NOT NULL DEFAULT 'FREE'`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ`,
+      sql`CREATE TABLE IF NOT EXISTS user_content_lists (user_id TEXT NOT NULL, movie_id TEXT NOT NULL, list_type TEXT NOT NULL CHECK (list_type IN ('FAVORITE', 'WATCH_LATER')), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, movie_id, list_type))`,
       sql`CREATE TABLE IF NOT EXISTS telegram_login_requests (id TEXT PRIMARY KEY, token_hash TEXT UNIQUE NOT NULL, completion_hash TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'PENDING', user_id TEXT, telegram_id TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL, verified_at TIMESTAMPTZ, completion_expires_at TIMESTAMPTZ, used_at TIMESTAMPTZ)`,
-    ]);
+    ]).then(() => sql`CREATE INDEX IF NOT EXISTS user_content_lists_user_type_idx ON user_content_lists (user_id, list_type, created_at DESC)`);
   }
   return ready;
 }
 
 export type TelegramProfile = { telegramId: string; firstName: string; lastName?: string; username?: string; languageCode?: string; photoUrl?: string };
-export type StoredUser = { id: string; telegramId: string; telegramUsername?: string; firstName: string; lastName?: string; telegramPhotoUrl?: string; role: string; isActive: boolean; createdAt: string; lastLoginAt: string };
+export type SubscriptionType = "FREE" | "PREMIUM";
+export type StoredUser = { id: string; telegramId: string; telegramUsername?: string; firstName: string; lastName?: string; telegramPhotoUrl?: string; role: string; subscriptionType: SubscriptionType; premiumExpiresAt?: string; isActive: boolean; createdAt: string; lastLoginAt: string };
 
 export async function createTelegramLoginRequest(id: string, tokenHash: string, expiresAt: Date): Promise<void> {
   await ensureTable(); const sql = db();
@@ -99,7 +103,27 @@ export async function replaceTelegramCompletion(loginRequestId: string, completi
 
 export async function readUsers(): Promise<StoredUser[]> {
   await ensureTable(); const sql = db();
-  return await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users ORDER BY created_at DESC` as StoredUser[];
+  return await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users ORDER BY created_at DESC` as StoredUser[];
+}
+
+export async function getUserProfile(id: string): Promise<StoredUser | undefined> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE id = ${id} LIMIT 1` as StoredUser[];
+  return rows[0];
+}
+
+export async function getUserListIds(userId: string, type: "FAVORITE" | "WATCH_LATER"): Promise<string[]> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`SELECT movie_id AS "movieId" FROM user_content_lists WHERE user_id = ${userId} AND list_type = ${type} ORDER BY created_at DESC` as { movieId: string }[];
+  return rows.map((row) => row.movieId);
+}
+
+export async function toggleUserListItem(userId: string, movieId: string, type: "FAVORITE" | "WATCH_LATER"): Promise<boolean> {
+  await ensureTable(); const sql = db();
+  const removed = await sql`DELETE FROM user_content_lists WHERE user_id = ${userId} AND movie_id = ${movieId} AND list_type = ${type} RETURNING movie_id` as unknown[];
+  if (removed.length) return false;
+  await sql`INSERT INTO user_content_lists (user_id, movie_id, list_type) VALUES (${userId}, ${movieId}, ${type}) ON CONFLICT DO NOTHING`;
+  return true;
 }
 
 export type AppSettings = {

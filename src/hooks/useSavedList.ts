@@ -2,48 +2,35 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-// localStorage asosidagi ro'yxat (sevimli / keyin ko'raman) — akkauntsiz ishlaydi
-export function useSavedList(key: "favorites" | "watchLater") {
+type Key = "favorites" | "watchLater";
+const apiType: Record<Key, "FAVORITE" | "WATCH_LATER"> = { favorites: "FAVORITE", watchLater: "WATCH_LATER" };
+
+/** Login qilingan userda Neon bazasi, mehmon rejimida esa oldingi localStorage ishlaydi. */
+export function useSavedList(key: Key) {
   const [ids, setIds] = useState<string[]>([]);
+  const [databaseMode, setDatabaseMode] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`uzdub_${key}`);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage'ni faqat mount'da o'qiymiz (SSR/hydration uchun)
-      setIds(raw ? JSON.parse(raw) : []);
-    } catch {
-      setIds([]);
-    }
-    // boshqa tabda o'zgarsa yangilash
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === `uzdub_${key}`) {
-        try {
-          setIds(e.newValue ? JSON.parse(e.newValue) : []);
-        } catch {
-          /* ignore */
-        }
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    let alive = true;
+    const local = () => { try { if (alive) setIds(JSON.parse(localStorage.getItem(`uzdub_${key}`) || "[]")); } catch { if (alive) setIds([]); } };
+    fetch(`/api/profile/lists?type=${apiType[key]}`, { cache: "no-store" })
+      .then(async (response) => ({ response, data: await response.json() }))
+      .then(({ response, data }) => { if (!alive) return; if (response.ok && Array.isArray(data.ids)) { setDatabaseMode(true); setIds(data.ids); } else local(); })
+      .catch(local);
+    return () => { alive = false; };
   }, [key]);
 
   const has = useCallback((id: string) => ids.includes(id), [ids]);
-
-  const toggle = useCallback(
-    (id: string) => {
-      setIds((prev) => {
-        const next = prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev];
-        try {
-          localStorage.setItem(`uzdub_${key}`, JSON.stringify(next));
-        } catch {
-          /* ignore */
-        }
-        return next;
-      });
-    },
-    [key]
-  );
-
-  return { ids, has, toggle };
+  const toggle = useCallback(async (id: string) => {
+    const wasSaved = ids.includes(id); const next = wasSaved ? ids.filter((item) => item !== id) : [id, ...ids];
+    setIds(next);
+    if (!databaseMode) { try { localStorage.setItem(`uzdub_${key}`, JSON.stringify(next)); } catch { /* ignore */ } return; }
+    try {
+      const response = await fetch("/api/profile/lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ movieId: id, type: apiType[key] }) });
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      setIds((current) => data.saved ? (current.includes(id) ? current : [id, ...current]) : current.filter((item) => item !== id));
+    } catch { setIds(ids); }
+  }, [databaseMode, ids, key]);
+  return { ids, has, toggle, databaseMode };
 }
