@@ -5,6 +5,7 @@ import type { Movie, ContentType, ContentStatus } from "@/types/movie";
 import { readMovies, addMovie, slugExists } from "@/lib/movies-store";
 import { MovieInput, mapGenres, mapEpisodes, slugify } from "@/lib/movie-input";
 import { createAutomaticSeo } from "@/lib/seo";
+import { notifyIndexNow } from "@/lib/indexnow";
 
 export const runtime = "nodejs";
 
@@ -62,6 +63,8 @@ export async function POST(req: Request) {
     isTrending: d.isTrending,
     isPremium: d.isPremium,
     ...seo,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     genres: mapGenres(d.genres),
     episodes: mapEpisodes(d.episodes, id),
   };
@@ -81,6 +84,7 @@ export async function POST(req: Request) {
   for (const p of ["/", "/kino", "/serial", "/top", "/janr", path]) {
     revalidatePath(p);
   }
+  void notifyIndexNow([path, ...(movie.type === "SERIAL" ? (movie.episodes ?? []).map((episode) => `/serial/${movie.slug}/qism/${episode.season}/${episode.episode}`) : [])]);
 
   return NextResponse.json({ ok: true, movie });
 }

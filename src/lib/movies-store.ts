@@ -205,7 +205,7 @@ export async function updateMovie(id: string, movie: Movie): Promise<boolean> {
   await ensureTable();
   const sql = db();
   const rows = (await sql`
-    UPDATE movies SET data = ${JSON.stringify(movie)}::jsonb, slug = ${movie.slug}
+    UPDATE movies SET data = ${JSON.stringify(movie)}::jsonb, slug = ${movie.slug}, created_at = created_at
     WHERE id = ${id} RETURNING id
   `) as unknown[];
   return rows.length > 0;

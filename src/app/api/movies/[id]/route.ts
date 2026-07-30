@@ -4,6 +4,7 @@ import type { Movie, ContentType, ContentStatus } from "@/types/movie";
 import { getMovie, updateMovie, deleteMovie } from "@/lib/movies-store";
 import { MovieInput, mapGenres, mapEpisodes } from "@/lib/movie-input";
 import { createAutomaticSeo } from "@/lib/seo";
+import { notifyIndexNow } from "@/lib/indexnow";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,7 @@ function revalidateAll(path?: string) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
+  const existing = await getMovie(id);
   let ok = false;
   try {
     ok = await deleteMovie(id);
@@ -31,6 +33,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     );
   }
   revalidateAll();
+  if (existing) void notifyIndexNow([`/${existing.type === "SERIAL" ? "serial" : "kino"}/${existing.slug}`]);
   return NextResponse.json({ ok: true });
 }
 
@@ -83,6 +86,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     isTrending: d.isTrending,
     isPremium: d.isPremium,
     ...seo,
+    updatedAt: new Date().toISOString(),
     genres: mapGenres(d.genres),
     episodes: mapEpisodes(d.episodes, id, existing.episodes ?? []),
   };
@@ -95,5 +99,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
 
   revalidateAll(updated.type === "SERIAL" ? `/serial/${updated.slug}` : `/kino/${updated.slug}`);
+  void notifyIndexNow([`/${updated.type === "SERIAL" ? "serial" : "kino"}/${updated.slug}`, ...(updated.type === "SERIAL" ? (updated.episodes ?? []).map((episode) => `/serial/${updated.slug}/qism/${episode.season}/${episode.episode}`) : [])]);
   return NextResponse.json({ ok: true, movie: updated });
 }

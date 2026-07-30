@@ -85,6 +85,7 @@ export interface Movie {
 
   publishedAt?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface User {
