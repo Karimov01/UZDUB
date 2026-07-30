@@ -36,7 +36,8 @@ export async function sendTelegramMessage(chatId: string, text: string, completi
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error("TELEGRAM_BOT_TOKEN sozlanmagan");
   const reply_markup = completionCode ? { inline_keyboard: [[{ text: "Saytga kirish", url: completionUrl(completionCode) }]] } : undefined;
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text, reply_markup }) });
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text, reply_markup }) });
+  if (!response.ok) console.error("[telegram-bot] Xabar yuborilmadi", { status: response.status, hasLoginButton: Boolean(completionCode) });
 }
 
 /** Telegram rasmi bo'lsa, bot tokenini oshkor qilmasdan mavjud R2 storage'ga nusxalaydi. */
