@@ -106,6 +106,12 @@ export async function getUserProfile(id: string): Promise<StoredUser | undefined
   return rows[0];
 }
 
+export async function updateUserAdmin(id: string, input: { role: "USER" | "ADMIN"; subscriptionType: SubscriptionType; isActive: boolean }): Promise<StoredUser | undefined> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`UPDATE users SET role = ${input.role}, subscription_type = ${input.subscriptionType}, is_active = ${input.isActive}, premium_expires_at = CASE WHEN ${input.subscriptionType} = 'PREMIUM' THEN COALESCE(premium_expires_at, now() + interval '30 days') ELSE NULL END, updated_at = now() WHERE id = ${id} RETURNING id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt"` as StoredUser[];
+  return rows[0];
+}
+
 export async function getUserListIds(userId: string, type: "FAVORITE" | "WATCH_LATER"): Promise<string[]> {
   await ensureTable(); const sql = db();
   const rows = await sql`SELECT movie_id AS "movieId" FROM user_content_lists WHERE user_id = ${userId} AND list_type = ${type} ORDER BY created_at DESC` as { movieId: string }[];
