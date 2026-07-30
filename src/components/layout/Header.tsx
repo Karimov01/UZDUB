@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<{ name?: string | null } | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -18,6 +19,15 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((session) => setUser(session?.user ?? null))
+      .catch(() => setUser(null));
+  }, []);
+
+  const profileLabel = user?.name?.split(" ")[0] || "Profilim";
 
   return (
     <>
@@ -95,10 +105,10 @@ export default function Header() {
                 <Bell className="h-5 w-5" />
               </button>
 
-              <Link href="/kirish">
+              <Link href={user ? "/profilim" : "/kirish"}>
                 <Button size="sm" className="hidden sm:flex">
                   <User className="h-4 w-4" />
-                  Kirish
+                  {user ? profileLabel : "Kirish"}
                 </Button>
               </Link>
 
@@ -144,10 +154,10 @@ export default function Header() {
               </Link>
             ))}
             <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
-              <Link href="/kirish" onClick={() => setMobileOpen(false)}>
+              <Link href={user ? "/profilim" : "/kirish"} onClick={() => setMobileOpen(false)}>
                 <Button className="w-full" size="lg">
                   <User className="h-4 w-4" />
-                  Kirish
+                  {user ? "Profilim" : "Kirish"}
                 </Button>
               </Link>
             </div>
