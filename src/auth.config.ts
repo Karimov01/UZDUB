@@ -6,5 +6,15 @@ export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
   secret: process.env.AUTH_SECRET,
   trustHost: true,
+  callbacks: {
+    jwt({ token, user }) {
+      if (user?.id) token.id = user.id;
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user && typeof token.id === "string") session.user.id = token.id;
+      return session;
+    },
+  },
   providers: [],
 };
