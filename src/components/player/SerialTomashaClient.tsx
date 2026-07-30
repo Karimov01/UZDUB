@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, Eye, List, Sparkles, VideoOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, VideoOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Movie, Episode } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
+import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
 
 export default function SerialTomashaClient({ serial, initialSeason, initialEpisode }: { serial: Movie; initialSeason?: number; initialEpisode?: number }) {
   const searchParams = useSearchParams();
@@ -14,10 +15,14 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   // Haqiqiy qismlar (admin qo'shgan). Bo'lmasa — serialning o'z videosidan bitta qism
   const eps: Episode[] =
     serial.episodes && serial.episodes.length > 0
-      ? [...serial.episodes].sort((a, b) => (a.season - b.season) || (a.episode - b.episode))
+      ? normalizeEpisodes(serial.episodes)
       : [{ id: "1", movieId: serial.id, season: 1, episode: 1, title: "1-qism", videoUrl: serial.videoUrl, duration: serial.duration, viewCount: 0 }];
 
   const currentEp = eps.find((e) => e.episode === epNum && (initialSeason === undefined || e.season === initialSeason)) ?? eps[0];
+  const currentIndex = eps.findIndex((episode) => episode.id === currentEp.id);
+  const previousEpisode = currentIndex > 0 ? eps[currentIndex - 1] : undefined;
+  const nextEpisode = currentIndex >= 0 ? eps[currentIndex + 1] : undefined;
+  const currentSeasonCount = eps.filter((episode) => episode.season === currentEp.season).length;
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
   const [episodeViews, setEpisodeViews] = useState(currentEp.viewCount ?? 0);
   const [showIndicator, setShowIndicator] = useState(true);
@@ -57,7 +62,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           style={{ background: "linear-gradient(135deg, rgba(20,12,35,0.9), rgba(12,12,20,0.82))", border: "1px solid rgba(196,132,252,0.75)", boxShadow: "0 0 22px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.14)" }}
         >
           <div className="h-11 w-11 md:h-16 md:w-16 rounded-lg md:rounded-xl flex items-center justify-center text-2xl md:text-4xl font-black text-white" style={{ background: "linear-gradient(145deg, #a855f7, #4c1d95 60%, #16052d)", boxShadow: "inset 0 1px 10px rgba(255,255,255,0.3), 0 5px 16px rgba(96,33,180,0.65)", fontFamily: "var(--font-display)" }}>{currentEp.episode}</div>
-          <div className="leading-tight"><p className="text-sm md:text-base font-bold text-white">{currentEp.episode}-qism</p><p className="text-[11px] md:text-xs mt-1" style={{ color: "#d8b4fe" }}>Jami {eps.length}-qism</p></div>
+          <div className="leading-tight"><p className="text-sm md:text-base font-bold text-white">{currentEp.season}-fasl, {currentEp.episode}-qism</p><p className="text-[11px] md:text-xs mt-1" style={{ color: "#d8b4fe" }}>Bu faslda {currentSeasonCount} qism</p></div>
         </div>}
           </div>
         </div>
@@ -78,34 +83,11 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <p className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{currentEp.description}</p>
         )}
 
-        {/* Episode list */}
-        <div className="mt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <List className="h-4 w-4" style={{ color: "var(--accent-violet)" }} />
-            <span className="text-sm font-semibold text-white">Qismlar ({eps.length})</span>
-          </div>
-          <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 p-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid var(--border)" }}>
-            {eps.map((ep) => (
-              <Link key={ep.id} href={`/serial/${serial.slug}/qism/${ep.season}/${ep.episode}`}>
-                <div
-                  className="h-10 w-full rounded-xl flex items-center justify-center text-sm font-bold transition-all hover:-translate-y-0.5 hover:text-white"
-                  style={{
-                    background: ep.episode === currentEp.episode
-                      ? "linear-gradient(135deg, #A855F7, #6D28D9)"
-                      : "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025))",
-                    color: ep.episode === currentEp.episode ? "#fff" : "var(--text-muted)",
-                    border: ep.episode === currentEp.episode ? "1px solid rgba(216,180,254,0.9)" : "1px solid rgba(255,255,255,0.1)",
-                    boxShadow: ep.episode === currentEp.episode ? "0 4px 18px rgba(139,92,246,0.5)" : "none",
-                  }}
-                  title={ep.title}
-                >
-                  {ep.episode}
-                </div>
-              </Link>
-            ))}
-          </div>
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}><Sparkles className="h-3.5 w-3.5 text-violet-400" /> Hozir {currentEp.episode}-qism ijro etilmoqda</p>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          {previousEpisode ? <Link href={`/serial/${serial.slug}/qism/${previousEpisode.season}/${previousEpisode.episode}`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium" style={{ color: "#ddd6fe", border: "1px solid rgba(167,139,250,.3)", background: "rgba(124,58,237,.1)" }}><ChevronLeft className="h-4 w-4" />Oldingi qism</Link> : <span />}
+          {nextEpisode ? <Link href={`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>Keyingi qism<ChevronRight className="h-4 w-4" /></Link> : null}
         </div>
+        <SeasonEpisodeSelector slug={serial.slug} episodes={eps} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} />
       </div>
     </div>
   );

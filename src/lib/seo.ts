@@ -48,8 +48,8 @@ export function createAutomaticSeo(movie: Pick<Movie, "title" | "year" | "type" 
 export function buildEpisodeMetadata(serial: Movie, episode: Episode): Metadata {
   const path = `/serial/${serial.slug}/qism/${episode.season}/${episode.episode}`;
   const url = `${SITE_URL}${path}`;
-  const title = `${serial.title} ${episode.episode}-qism O'zbek tilida${serial.year ? ` (${serial.year})` : ""}`;
-  const description = episode.description || `${serial.title} ${episode.episode}-qismini O'zbek tilida onlayn tomosha qiling.`;
+  const title = `${serial.title} ${episode.season}-fasl ${episode.episode}-qism O'zbek tilida${serial.year ? ` (${serial.year})` : ""}`;
+  const description = episode.description || `${serial.title} ${episode.season}-fasl ${episode.episode}-qismini O'zbek tilida onlayn tomosha qiling.`;
   const images = serial.backdropUrl || serial.posterUrl ? [{ url: serial.backdropUrl ?? serial.posterUrl! }] : undefined;
 
   return {
@@ -67,8 +67,8 @@ export function buildEpisodeJsonLd(serial: Movie, episode: Episode): Record<stri
   return {
     "@context": "https://schema.org",
     "@type": "TVEpisode",
-    name: `${serial.title} ${episode.episode}-qism O'zbek tilida`,
-    description: episode.description || `${serial.title} ${episode.episode}-qismini O'zbek tilida tomosha qiling.`,
+    name: `${serial.title} ${episode.season}-fasl ${episode.episode}-qism O'zbek tilida`,
+    description: episode.description || `${serial.title} ${episode.season}-fasl ${episode.episode}-qismini O'zbek tilida tomosha qiling.`,
     url: `${SITE_URL}${path}`,
     episodeNumber: episode.episode,
     partOfSeason: { "@type": "TVSeason", seasonNumber: episode.season },

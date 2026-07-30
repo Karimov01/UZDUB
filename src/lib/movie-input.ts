@@ -70,12 +70,20 @@ export const MovieInput = z.object({
     .max(1000)
     .optional()
     .default([]),
+}).superRefine((input, ctx) => {
+  const seen = new Set<string>();
+  input.episodes.forEach((episode, index) => {
+    const key = `${episode.season ?? 1}:${episode.episode}`;
+    if (seen.has(key)) ctx.addIssue({ code: "custom", path: ["episodes", index, "episode"], message: `${episode.season ?? 1}-faslda ${episode.episode}-qism allaqachon mavjud.` });
+    seen.add(key);
+  });
 });
 
 export type MovieInputData = z.infer<typeof MovieInput>;
 
 // Forma qismlarini to'liq Episode obyektlariga aylantirish
-export function mapEpisodes(input: MovieInputData["episodes"], movieId: string): Episode[] {
+export function mapEpisodes(input: MovieInputData["episodes"], movieId: string, existingEpisodes: Episode[] = []): Episode[] {
+  const existingById = new Map(existingEpisodes.map((episode) => [episode.id, episode]));
   return (input ?? []).map((e) => ({
     id: e.id || randomUUID(),
     movieId,
@@ -85,6 +93,6 @@ export function mapEpisodes(input: MovieInputData["episodes"], movieId: string):
     description: e.description || undefined,
     videoUrl: e.videoUrl || undefined,
     duration: e.duration,
-    viewCount: 0,
+    viewCount: e.id ? existingById.get(e.id)?.viewCount ?? 0 : 0,
   }));
 }

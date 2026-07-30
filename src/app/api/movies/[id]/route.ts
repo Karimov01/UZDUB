@@ -84,7 +84,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     isPremium: d.isPremium,
     ...seo,
     genres: mapGenres(d.genres),
-    episodes: mapEpisodes(d.episodes, id),
+    episodes: mapEpisodes(d.episodes, id, existing.episodes ?? []),
   };
 
   try {

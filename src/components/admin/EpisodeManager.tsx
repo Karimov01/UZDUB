@@ -1,161 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Sparkles, Loader2, Film, ArrowDown, ArrowUp, Eye } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Trash2, Sparkles, Loader2, Film, Layers3, CirclePlus, Eye } from "lucide-react";
 
-export interface EpisodeForm {
-  id?: string;
-  season: string;
-  episode: string;
-  title: string;
-  description: string;
-  videoUrl: string;
-  duration: string;
-}
+export interface EpisodeForm { id?: string; season: string; episode: string; title: string; description: string; videoUrl: string; duration: string; }
+export function emptyEpisode(nextNum: number, season = 1): EpisodeForm { return { season: String(season), episode: String(nextNum), title: "", description: "", videoUrl: "", duration: "" }; }
 
-export function emptyEpisode(nextNum: number): EpisodeForm {
-  return { season: "1", episode: String(nextNum), title: "", description: "", videoUrl: "", duration: "" };
-}
+function sortEpisodes(episodes: EpisodeForm[]) { return [...episodes].sort((a, b) => Number(a.season) - Number(b.season) || Number(a.episode) - Number(b.episode)); }
 
-export default function EpisodeManager({
-  episodes,
-  onChange,
-  serialTitle,
-  originalTitle,
-}: {
-  episodes: EpisodeForm[];
-  onChange: (eps: EpisodeForm[]) => void;
-  serialTitle: string;
-  originalTitle: string;
-}) {
+export default function EpisodeManager({ episodes, onChange, serialTitle, originalTitle }: { episodes: EpisodeForm[]; onChange: (eps: EpisodeForm[]) => void; serialTitle: string; originalTitle: string; }) {
   const [aiIndex, setAiIndex] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const seasons = useMemo(() => [...new Set(episodes.map((episode) => Math.max(1, Number(episode.season) || 1)))].sort((a, b) => a - b), [episodes]);
+  const [selectedSeason, setSelectedSeason] = useState<number>(seasons.at(-1) ?? 1);
+  const currentSeason = seasons.includes(selectedSeason) ? selectedSeason : seasons.at(-1) ?? 1;
+  const visible = sortEpisodes(episodes.filter((episode) => (Number(episode.season) || 1) === currentSeason));
+  const indexedVisible = visible.map((episode) => ({ episode, index: episodes.indexOf(episode) }));
 
-  const update = (i: number, key: keyof EpisodeForm, value: string) => {
-    const next = episodes.map((e, idx) => (idx === i ? { ...e, [key]: value } : e));
-    onChange(next);
-  };
-
-  const add = () => {
-    const nextNum = episodes.length ? Math.max(...episodes.map((e) => Number(e.episode) || 0)) + 1 : 1;
-    onChange([...episodes, emptyEpisode(nextNum)]);
-  };
-
-  const remove = (i: number) => onChange(episodes.filter((_, idx) => idx !== i));
-  const move = (i: number, direction: -1 | 1) => {
-    const target = i + direction;
-    if (target < 0 || target >= episodes.length) return;
-    const next = [...episodes];
-    [next[i], next[target]] = [next[target], next[i]];
-    onChange(next.map((episode, index) => ({ ...episode, episode: String(index + 1) })));
-  };
-
-  const aiFill = async (i: number) => {
-    setAiIndex(i);
-    setError("");
-    try {
-      const ep = episodes[i];
-      const res = await fetch("/api/ai-fill-episode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serialTitle, originalTitle, season: ep.season, episode: ep.episode, title: ep.title }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "AI xatosi");
-      const next = episodes.map((e, idx) =>
-        idx === i ? { ...e, title: json.data.title || e.title, description: json.data.description || e.description } : e
-      );
-      onChange(next);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "AI xatosi");
-    } finally {
-      setAiIndex(null);
-    }
-  };
-
+  const update = (index: number, key: keyof EpisodeForm, value: string) => { setError(""); onChange(episodes.map((episode, i) => i === index ? { ...episode, [key]: value } : episode)); };
+  const addToSeason = (season: number, episode?: number) => { const next = episode ?? Math.max(0, ...episodes.filter((item) => (Number(item.season) || 1) === season).map((item) => Number(item.episode) || 0)) + 1; setSelectedSeason(season); setError(""); onChange([...episodes, emptyEpisode(next, season)]); };
+  const addNewSeason = () => addToSeason(Math.max(0, ...seasons) + 1, 1);
+  const remove = (index: number, episode: EpisodeForm) => { if (!window.confirm(`${episode.season}-fasl ${episode.episode}-qismni o'chirmoqchimisiz?`)) return; onChange(episodes.filter((_, i) => i !== index)); };
+  const aiFill = async (index: number) => { setAiIndex(index); setError(""); try { const episode = episodes[index]; const response = await fetch("/api/ai-fill-episode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ serialTitle, originalTitle, season: episode.season, episode: episode.episode, title: episode.title }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error || "AI xatosi"); onChange(episodes.map((item, i) => i === index ? { ...item, title: json.data.title || item.title, description: json.data.description || item.description } : item)); } catch (cause) { setError(cause instanceof Error ? cause.message : "AI xatosi"); } finally { setAiIndex(null); } };
   const inputClass = "w-full px-2.5 py-2 rounded-lg text-sm text-white outline-none";
   const inputStyle = { background: "var(--bg-primary)", border: "1px solid var(--border)" };
 
-  return (
-    <div className="p-5 rounded-2xl" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="flex items-center gap-2 font-semibold text-white text-sm">
-          <Film className="h-4 w-4" style={{ color: "var(--accent-violet)" }} />
-          Qismlar ({episodes.length})
-        </h3>
-        <button
-          type="button"
-          onClick={add}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
-          style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Qism qo&apos;shish
-        </button>
-      </div>
-
-      {error && (
-        <div className="mb-3 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}>{error}</div>
-      )}
-
-      {episodes.length === 0 && (
-        <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>
-          Hali qism yo&apos;q. &quot;Qism qo&apos;shish&quot; bilan boshlang.
-        </p>
-      )}
-
-      <div className="space-y-3">
-        {episodes.map((ep, i) => (
-          <div key={ep.id ?? i} className="p-3 rounded-xl" style={{ background: "var(--bg-primary)", border: "1px solid var(--border)" }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex flex-col gap-1 mt-4">
-                <button type="button" aria-label="Yuqoriga" onClick={() => move(i, -1)} disabled={i === 0} className="p-1 rounded disabled:opacity-30" style={{ color: "var(--accent-violet)" }}><ArrowUp className="h-3.5 w-3.5" /></button>
-                <button type="button" aria-label="Pastga" onClick={() => move(i, 1)} disabled={i === episodes.length - 1} className="p-1 rounded disabled:opacity-30" style={{ color: "var(--accent-violet)" }}><ArrowDown className="h-3.5 w-3.5" /></button>
-              </div>
-              <div className="w-14">
-                <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Mavsum</label>
-                <input className={inputClass} style={inputStyle} type="number" value={ep.season} onChange={(e) => update(i, "season", e.target.value)} />
-              </div>
-              <div className="w-14">
-                <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Qism</label>
-                <input className={inputClass} style={inputStyle} type="number" value={ep.episode} onChange={(e) => update(i, "episode", e.target.value)} />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Qism nomi</label>
-                <input className={inputClass} style={inputStyle} placeholder="Qism nomi" value={ep.title} onChange={(e) => update(i, "title", e.target.value)} />
-              </div>
-              <button
-                type="button"
-                onClick={() => aiFill(i)}
-                disabled={aiIndex === i}
-                title="AI bilan nom + tavsif to'ldirish"
-                className="mt-4 p-2 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-60 shrink-0"
-                style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}
-              >
-                {aiIndex === i ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              </button>
-              <button type="button" onClick={() => remove(i)} title="O'chirish" className="mt-4 p-2 rounded-lg transition-all hover:bg-red-500/10 shrink-0" style={{ color: "#EF4444" }}>
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Video havolasi (.m3u8 / .mp4)</label>
-                <input className={inputClass} style={inputStyle} placeholder="https://..." value={ep.videoUrl} onChange={(e) => update(i, "videoUrl", e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Davomiyligi (daq)</label>
-                <input className={inputClass} style={inputStyle} type="number" placeholder="45" value={ep.duration} onChange={(e) => update(i, "duration", e.target.value)} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] mb-0.5" style={{ color: "var(--text-muted)" }}>Tavsif</label>
-              <textarea className={inputClass} style={{ ...inputStyle, minHeight: 56, resize: "vertical" }} placeholder="Qism tavsifi (AI to'ldirishi mumkin)" value={ep.description} onChange={(e) => update(i, "description", e.target.value)} />
-            </div>
-            {ep.id && <p className="mt-2 flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Eye className="h-3 w-3" /> Qism ko&apos;rishlari alohida hisoblanadi.</p>}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <div className="p-5 rounded-2xl" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h3 className="flex items-center gap-2 font-semibold text-white text-sm"><Layers3 className="h-4 w-4" style={{ color: "var(--accent-violet)" }} />Fasllar va qismlar</h3><p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{seasons.length} fasl · {episodes.length} qism</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => addToSeason(currentSeason)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}><Plus className="h-3.5 w-3.5" />Keyingi qism</button><button type="button" onClick={addNewSeason} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ border: "1px solid rgba(167,139,250,.45)", color: "#d8b4fe" }}><CirclePlus className="h-3.5 w-3.5" />Yangi fasl</button></div></div>
+    {error && <div className="mb-3 text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.12)", color: "#EF4444" }}>{error}</div>}
+    <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{seasons.map((season) => { const selected = season === currentSeason; const count = episodes.filter((episode) => (Number(episode.season) || 1) === season).length; return <button type="button" key={season} onClick={() => setSelectedSeason(season)} className="shrink-0 min-w-[104px] px-3 py-2 rounded-xl text-left" style={{ background: selected ? "linear-gradient(135deg, rgba(124,58,237,.45), rgba(76,29,149,.25))" : "var(--bg-primary)", border: selected ? "1px solid rgba(196,132,252,.8)" : "1px solid var(--border)", boxShadow: selected ? "0 0 16px rgba(139,92,246,.2)" : "none" }}><span className="block text-sm font-semibold text-white">{season}-fasl</span><span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{count} qism</span></button>; })}</div>
+    {!episodes.length ? <p className="text-sm text-center py-7" style={{ color: "var(--text-muted)" }}>Hali qism yo&apos;q. “Keyingi qism” bilan boshlang.</p> : <div className="space-y-3 mt-4">{indexedVisible.map(({ episode, index }) => <div key={episode.id ?? `${episode.season}-${episode.episode}-${index}`} className="p-3 rounded-xl" style={{ background: "var(--bg-primary)", border: "1px solid var(--border)" }}><div className="grid grid-cols-1 sm:grid-cols-[64px_64px_1fr_auto_auto] gap-2 items-end"><Field label="Fasl"><input className={inputClass} style={inputStyle} type="number" min="1" value={episode.season} onChange={(event) => update(index, "season", event.target.value)} /></Field><Field label="Qism"><input className={inputClass} style={inputStyle} type="number" min="1" value={episode.episode} onChange={(event) => update(index, "episode", event.target.value)} /></Field><Field label="Qism nomi"><input className={inputClass} style={inputStyle} placeholder="Ixtiyoriy" value={episode.title} onChange={(event) => update(index, "title", event.target.value)} /></Field><button type="button" onClick={() => aiFill(index)} disabled={aiIndex === index} title="AI bilan to'ldirish" className="p-2 rounded-lg text-white disabled:opacity-60" style={{ background: "linear-gradient(135deg, #7C3AED, #EC4899)" }}>{aiIndex === index ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}</button><button type="button" onClick={() => remove(index, episode)} title="Qismni o'chirish" className="p-2 rounded-lg" style={{ color: "#ef4444" }}><Trash2 className="h-4 w-4" /></button></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2"><div className="sm:col-span-2"><Field label="Video havolasi"><input className={inputClass} style={inputStyle} placeholder="https://..." value={episode.videoUrl} onChange={(event) => update(index, "videoUrl", event.target.value)} /></Field></div><Field label="Davomiyligi (daq)"><input className={inputClass} style={inputStyle} type="number" min="0" value={episode.duration} onChange={(event) => update(index, "duration", event.target.value)} /></Field></div><Field label="Tavsif"><textarea className={inputClass} style={{ ...inputStyle, minHeight: 56, resize: "vertical" }} placeholder="Qism tavsifi" value={episode.description} onChange={(event) => update(index, "description", event.target.value)} /></Field>{episode.id && <p className="mt-2 flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Eye className="h-3 w-3" />Qism ko&apos;rishlari alohida hisoblanadi.</p>}</div>)}</div>}
+  </div>;
 }
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block text-[10px]" style={{ color: "var(--text-muted)" }}><span className="block mb-0.5">{label}</span>{children}</label>; }

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Plus, Heart, Star, Eye, Film, Calendar, Globe, Mic, Tv, Check, List, Sparkles } from "lucide-react";
+import { Play, Plus, Heart, Star, Eye, Film, Calendar, Globe, Mic, Tv, Check } from "lucide-react";
 import { formatViewCount } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -13,6 +13,7 @@ import MovieCard from "@/components/movie/MovieCard";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
+import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
 
 export default function SerialDetail({ serial, similarMovies = [] }: { serial: Movie; similarMovies?: Movie[] }) {
   const similar = similarMovies.filter(
@@ -25,9 +26,8 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
   const isFav = fav.has(serial.id);
   const isLater = later.has(serial.id);
 
-  const episodes = serial.episodes && serial.episodes.length > 0
-    ? [...serial.episodes].sort((a, b) => (a.season - b.season) || (a.episode - b.episode))
-    : [];
+  const episodes = normalizeEpisodes(serial.episodes ?? []);
+  const firstEpisode = episodes[0];
 
   useEffect(() => {
     const k = `uzdub_viewed_${serial.id}`;
@@ -125,7 +125,7 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
             </motion.div>
 
             <motion.div variants={fadeInUp} className="flex gap-3 flex-wrap">
-              <Link href={`/serial/${serial.slug}/tomosha`}>
+              <Link href={firstEpisode ? `/serial/${serial.slug}/qism/${firstEpisode.season}/${firstEpisode.episode}` : `/serial/${serial.slug}/tomosha`}>
                 <Button size="lg"><Play className="h-5 w-5 fill-white" />Ko&apos;rishni boshlash</Button>
               </Link>
               <Button
@@ -151,16 +151,7 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
         </div>
       </div>
 
-      {/* Episodes */}
-      {episodes.length > 0 && (
-        <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-8">
-          <div className="flex items-center justify-between mb-4"><h2 className="flex items-center gap-2 text-xl font-bold text-white" style={{ fontFamily: "var(--font-display)" }}><List className="h-5 w-5 text-violet-400" />Qismlar ({episodes.length})</h2><span className="text-xs px-3 py-1.5 rounded-full" style={{ color: "#d8b4fe", background: "rgba(139,92,246,0.13)", border: "1px solid rgba(139,92,246,0.28)" }}>Qismni tanlang</span></div>
-          <div className="max-h-[360px] overflow-y-auto grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 p-3 rounded-2xl" style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(124,58,237,0.04))", border: "1px solid rgba(139,92,246,0.25)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)" }}>
-            {episodes.map((ep) => <Link key={ep.id} href={`/serial/${serial.slug}/qism/${ep.season}/${ep.episode}`} title={`${ep.episode}-qism${ep.title ? `: ${ep.title}` : ""}`} className="h-11 rounded-xl flex items-center justify-center font-bold text-white transition-all hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.035))", border: "1px solid rgba(255,255,255,0.12)" }}>{ep.episode}</Link>)}
-          </div>
-          {episodes.length > 30 && <p className="mt-3 flex justify-center items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}><Sparkles className="h-3.5 w-3.5 text-violet-400" /> Barcha qismlarni ko&apos;rish uchun panel ichida pastga suring.</p>}
-        </div>
-      )}
+      {episodes.length > 0 && <SeasonEpisodeSelector slug={serial.slug} episodes={episodes} title={serial.title} />}
 
       {/* Similar serials */}
       {similar.length > 0 && (
