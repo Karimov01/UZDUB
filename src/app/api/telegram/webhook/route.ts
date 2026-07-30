@@ -13,6 +13,6 @@ export async function POST(request: Request) {
   const { result } = await verifyTelegramStart(payload.slice(5), { telegramId: String(from.id), firstName: from.first_name, lastName: from.last_name, username: from.username, languageCode: from.language_code, photoUrl });
   if (result === "VERIFIED") await sendTelegramMessage(String(message.chat.id), "✅ Telegram akkauntingiz muvaffaqiyatli tasdiqlandi. Saytdagi kirish oynasiga qayting — akkauntingiz avtomatik ochiladi.");
   else if (result === "EXPIRED") await sendTelegramMessage(String(message.chat.id), "Ushbu kirish havolasining amal qilish muddati tugagan. Xavfsizlik sababli havola faqat 10 daqiqa amal qiladi. Saytga qaytib yangi havola yarating.");
-  else await sendTelegramMessage(String(message.chat.id), "Kirish havolasi noto'g'ri yoki avval ishlatilgan. Saytdan yangi havola yarating.");
+  else await sendTelegramMessage(String(message.chat.id), "Bu tasdiqlash havolasi avval ishlatilgan yoki muddati tugagan. Saytdagi kirish oynasiga qayting: agar tasdiqlash muvaffaqiyatli bo'lgan bo'lsa, akkauntingiz avtomatik ochiladi. Aks holda, saytdan yangi havola yarating.");
   return NextResponse.json({ ok: true });
 }
