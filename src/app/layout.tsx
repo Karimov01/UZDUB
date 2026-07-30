@@ -14,6 +14,14 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,
   applicationName: APP_NAME,
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   authors: [{ name: APP_NAME, url: SITE_URL }],
   creator: APP_NAME,
   publisher: APP_NAME,
