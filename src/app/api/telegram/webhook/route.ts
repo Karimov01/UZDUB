@@ -10,8 +10,8 @@ export async function POST(request: Request) {
   const payload = text.split(/\s+/, 2)[1] || "";
   if (!payload.startsWith("auth_")) { await sendTelegramMessage(String(message.chat.id), "UZDUB Play'ga xush kelibsiz. Saytdagi Kirish tugmasi orqali xavfsiz havola yarating."); return NextResponse.json({ ok: true }); }
   const photoUrl = await saveTelegramProfilePhoto(String(from.id));
-  const { result, completionCode } = await verifyTelegramStart(payload.slice(5), { telegramId: String(from.id), firstName: from.first_name, lastName: from.last_name, username: from.username, languageCode: from.language_code, photoUrl });
-  if (result === "VERIFIED") await sendTelegramMessage(String(message.chat.id), "✅ Telegram akkauntingiz muvaffaqiyatli tasdiqlandi. UZDUB Play akkauntingiz tayyor.", completionCode);
+  const { result } = await verifyTelegramStart(payload.slice(5), { telegramId: String(from.id), firstName: from.first_name, lastName: from.last_name, username: from.username, languageCode: from.language_code, photoUrl });
+  if (result === "VERIFIED") await sendTelegramMessage(String(message.chat.id), "✅ Telegram akkauntingiz muvaffaqiyatli tasdiqlandi. Saytdagi kirish oynasiga qayting — akkauntingiz avtomatik ochiladi.");
   else if (result === "EXPIRED") await sendTelegramMessage(String(message.chat.id), "Ushbu kirish havolasining amal qilish muddati tugagan. Xavfsizlik sababli havola faqat 10 daqiqa amal qiladi. Saytga qaytib yangi havola yarating.");
   else await sendTelegramMessage(String(message.chat.id), "Kirish havolasi noto'g'ri yoki avval ishlatilgan. Saytdan yangi havola yarating.");
   return NextResponse.json({ ok: true });
