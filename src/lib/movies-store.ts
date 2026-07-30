@@ -78,7 +78,12 @@ export async function consumeTelegramCompletion(completionHash: string): Promise
   const rows = await sql`
     WITH completed AS (
       UPDATE telegram_login_requests SET status = 'USED', used_at = now()
-      WHERE completion_hash = ${completionHash} AND status = 'VERIFIED' AND completion_expires_at > now()
+      WHERE completion_hash = ${completionHash}
+        AND completion_expires_at > now()
+        AND (
+          status = 'VERIFIED'
+          OR (status = 'USED' AND used_at > now() - interval '30 seconds')
+        )
       RETURNING user_id
     )
     SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE id = (SELECT user_id FROM completed)
