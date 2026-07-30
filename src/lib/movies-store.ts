@@ -51,21 +51,15 @@ export async function getTelegramLoginStatus(id: string): Promise<{ status: stri
 
 export async function verifyTelegramLogin(tokenHash: string, completionHash: string, newUserId: string, profile: TelegramProfile): Promise<"VERIFIED" | "EXPIRED" | "INVALID"> {
   await ensureTable(); const sql = db();
-  const rows = await sql`
-    WITH request AS (
-      UPDATE telegram_login_requests SET status = 'VERIFIED', telegram_id = ${profile.telegramId}, completion_hash = ${completionHash}, verified_at = now(), completion_expires_at = now() + interval '5 minutes'
-      WHERE token_hash = ${tokenHash} AND status = 'PENDING' AND expires_at > now()
-      RETURNING id
-    ), account AS (
-      INSERT INTO users (id, telegram_id, telegram_username, first_name, last_name, language_code, telegram_photo_url)
-      SELECT ${newUserId}, ${profile.telegramId}, ${profile.username ?? null}, ${profile.firstName}, ${profile.lastName ?? null}, ${profile.languageCode ?? null}, ${profile.photoUrl ?? null}
-      WHERE EXISTS (SELECT 1 FROM request)
-      ON CONFLICT (telegram_id) DO UPDATE SET telegram_username = EXCLUDED.telegram_username, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, language_code = EXCLUDED.language_code, telegram_photo_url = COALESCE(EXCLUDED.telegram_photo_url, users.telegram_photo_url), updated_at = now(), last_login_at = now(), telegram_verified = true
-      RETURNING id
-    )
-    UPDATE telegram_login_requests SET user_id = (SELECT id FROM account) WHERE id = (SELECT id FROM request) RETURNING id
-  ` as { id: string }[];
-  if (rows.length) return "VERIFIED";
+  const requests = await sql`UPDATE telegram_login_requests SET status = 'VERIFIED', telegram_id = ${profile.telegramId}, completion_hash = ${completionHash}, verified_at = now(), completion_expires_at = now() + interval '5 minutes' WHERE token_hash = ${tokenHash} AND status = 'PENDING' AND expires_at > now() RETURNING id` as { id: string }[];
+  const request = requests[0];
+  if (request) {
+    const accounts = await sql`INSERT INTO users (id, telegram_id, telegram_username, first_name, last_name, language_code, telegram_photo_url) VALUES (${newUserId}, ${profile.telegramId}, ${profile.username ?? null}, ${profile.firstName}, ${profile.lastName ?? null}, ${profile.languageCode ?? null}, ${profile.photoUrl ?? null}) ON CONFLICT (telegram_id) DO UPDATE SET telegram_username = EXCLUDED.telegram_username, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, language_code = EXCLUDED.language_code, telegram_photo_url = COALESCE(EXCLUDED.telegram_photo_url, users.telegram_photo_url), updated_at = now(), last_login_at = now(), telegram_verified = true RETURNING id` as { id: string }[];
+    const account = accounts[0];
+    if (!account) throw new Error("Telegram foydalanuvchisi saqlanmadi");
+    await sql`UPDATE telegram_login_requests SET user_id = ${account.id} WHERE id = ${request.id} AND status = 'VERIFIED'`;
+    return "VERIFIED";
+  }
   const status = await getTelegramLoginStatusByHash(tokenHash);
   return status === "EXPIRED" ? "EXPIRED" : "INVALID";
 }
