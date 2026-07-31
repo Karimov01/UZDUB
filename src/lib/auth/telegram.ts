@@ -29,7 +29,7 @@ export async function issueBrowserCompletion(loginRequestId: string) {
   return ok ? completionCode : undefined;
 }
 
-export function completionUrl(code: string) { return `${siteUrl()}/auth/telegram/complete?code=${encodeURIComponent(code)}`; }
+export function completionUrl(code: string) { return `${siteUrl()}/auth/telegram/complete?token=${encodeURIComponent(code)}`; }
 export function hashCompletionCode(code: string) { return sha256(code); }
 
 async function sendTelegramPayload(chatId: string, text: string, replyMarkup?: Record<string, unknown>) {
