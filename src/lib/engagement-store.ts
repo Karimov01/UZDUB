@@ -36,7 +36,8 @@ export async function getEngagement(contentId: string, voterId?: string, sort: "
   const comments = sort === "top"
     ? await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_username AS "telegramUsername", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COUNT(cl.comment_id)::int AS likes, BOOL_OR(cl.user_id = ${voterId ?? ""}) AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.content_id = ${contentId} AND c.status = 'APPROVED' GROUP BY c.id, u.id ORDER BY COUNT(cl.comment_id) DESC, c.created_at DESC LIMIT 10 OFFSET ${offset}` as unknown as EngagementComment[]
     : await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_username AS "telegramUsername", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COUNT(cl.comment_id)::int AS likes, BOOL_OR(cl.user_id = ${voterId ?? ""}) AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.content_id = ${contentId} AND c.status = 'APPROVED' GROUP BY c.id, u.id ORDER BY c.created_at DESC LIMIT 10 OFFSET ${offset}` as unknown as EngagementComment[];
-  return { rating: ratings[0] ?? { average: 0, count: 0, myScore: 0 }, reaction: reactions[0] ?? { likes: 0, dislikes: 0, myReaction: "" }, comments };
+  const totals = await sql`SELECT COUNT(*)::int AS total FROM comments WHERE content_id = ${contentId} AND status = 'APPROVED'` as unknown as { total: number }[];
+  return { rating: ratings[0] ?? { average: 0, count: 0, myScore: 0 }, reaction: reactions[0] ?? { likes: 0, dislikes: 0, myReaction: "" }, comments, totalComments: totals[0]?.total ?? 0 };
 }
 
 export async function saveRating(contentId: string, voterId: string, score: number) {

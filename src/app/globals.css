@@ -73,3 +73,11 @@ h1, h2, h3, h4, h5, h6 {
 .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
 .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+/* Izoh va reply yozish maydoni hech qachon RTL ko‘rinishga o‘tmaydi. */
+textarea[placeholder="Izohingizni yozing..."],
+textarea[placeholder="Javobingizni yozing..."] {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: normal;
+}
