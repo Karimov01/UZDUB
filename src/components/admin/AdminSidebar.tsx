@@ -16,7 +16,7 @@ const navItems = [
   { label: "Foydalanuvchilar", href: "/admin/foydalanuvchilar", icon: Users },
   { label: "Janrlar", href: "/admin/janrlar", icon: Tag },
   { label: "Izohlar", href: "/admin/izohlar", icon: MessageCircle },
-  { label: "Statistika", href: "/admin/statistika", icon: BarChart3 },
+  { label: "Hisobot", href: "/admin/hisobot", icon: BarChart3 },
   { label: "Sozlamalar", href: "/admin/sozlamalar", icon: Settings },
 ];
 
