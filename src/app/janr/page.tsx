@@ -1,59 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getPublishedMovies } from "@/lib/movies";
-
-export const revalidate = 60;
-
-export const metadata: Metadata = { title: "Janrlar" };
-
-const genres = [
-  { slug: "drama", name: "Drama", emoji: "🎭", color: "#7C3AED" },
-  { slug: "harakatli", name: "Harakatli", emoji: "💥", color: "#F59E0B" },
-  { slug: "triller", name: "Triller", emoji: "😱", color: "#EF4444" },
-  { slug: "ilmiy-fantastika", name: "Ilmiy Fantastika", emoji: "🚀", color: "#06B6D4" },
-  { slug: "fantastik", name: "Fantastik", emoji: "🧙", color: "#8B5CF6" },
-  { slug: "jinoyat", name: "Jinoyat", emoji: "🔫", color: "#6366F1" },
-  { slug: "komediya", name: "Komediya", emoji: "😄", color: "#EC4899" },
-  { slug: "romantik", name: "Romantik", emoji: "❤️", color: "#F43F5E" },
-  { slug: "tarix", name: "Tarixiy", emoji: "🏛️", color: "#14B8A6" },
-  { slug: "multfilm", name: "Multfilm", emoji: "🎠", color: "#F97316" },
-  { slug: "dahshat", name: "Dahshat", emoji: "👻", color: "#DC2626" },
-  { slug: "musiqa", name: "Musiqa", emoji: "🎵", color: "#10B981" },
-];
-
-export default async function JanrlarPage() {
-  const movies = await getPublishedMovies();
-  return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-10">
-      <h1 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "var(--font-display)" }}>
-        Janrlar
-      </h1>
-      <p className="mb-8" style={{ color: "var(--text-muted)" }}>
-        O&apos;zingizga yoqqan janrni tanlang
-      </p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {genres.map((genre) => {
-          const count = movies.filter((m) => m.genres?.some((g) => g.slug === genre.slug)).length;
-          return (
-            <Link key={genre.slug} href={`/janr/${genre.slug}`}>
-              <div
-                className="p-5 rounded-2xl cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
-                style={{
-                  background: `linear-gradient(135deg, ${genre.color}22 0%, ${genre.color}11 100%)`,
-                  border: `1px solid ${genre.color}44`,
-                }}
-              >
-                <div className="text-4xl mb-3">{genre.emoji}</div>
-                <h3 className="font-semibold text-white text-base mb-1">{genre.name}</h3>
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  {count > 0 ? `${count} ta kino` : "Yangi kinolar"}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+import { readGenres } from "@/lib/movies-store";
+import GenreGrid, { type GenreCard } from "@/components/genre/GenreGrid";
+export const revalidate=60; export const metadata:Metadata={title:"Janrlar"};
+const fallback=[['drama','Drama','🎭','#7C3AED'],['harakatli','Harakatli','💥','#EF4444'],['triller','Triller','😱','#EC4899'],['ilmiy-fantastika','Ilmiy fantastika','🚀','#06B6D4'],['fantastik','Fantastik','🧙','#8B5CF6'],['jinoyat','Jinoyat','🔫','#22c55e'],['komediya','Komediya','😂','#F59E0B'],['romantik','Romantik','❤️','#F43F5E'],['tarix','Tarixiy','🏛️','#14B8A6'],['multfilm','Multfilm','🎞️','#F97316'],['dahshat','Dahshat','👻','#DC2626'],['musiqa','Musiqa','🎵','#3B82F6']];
+export default async function JanrlarPage(){const[movies,stored]=await Promise.all([getPublishedMovies(),readGenres()]);const source=stored.length?stored.map(g=>[g.slug,g.name,'🎬',g.color??'#7C3AED']):fallback;const genres:GenreCard[]=source.map(([slug,name,emoji,color])=>({slug:String(slug),name:String(name),emoji:String(emoji),color:String(color),count:movies.filter(m=>m.genres?.some(g=>g.slug===slug)).length}));return <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-10"><section className="rounded-3xl p-6 md:p-9 mb-8" style={{background:"radial-gradient(circle at 85% 0%,rgba(168,85,247,.25),transparent 34%),linear-gradient(135deg,rgba(22,17,42,.92),rgba(10,12,21,.95))",border:"1px solid rgba(168,85,247,.3)"}}><p className="text-sm text-violet-300">Katalog</p><h1 className="text-3xl md:text-4xl font-bold text-white mt-2">Janrlar</h1><p className="mt-3" style={{color:"var(--text-secondary)"}}>O‘zingizga yoqqan janrni tanlang va yangi filmlarni kashf eting.</p></section><GenreGrid genres={genres}/></main>}
