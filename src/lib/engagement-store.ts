@@ -20,7 +20,8 @@ async function ensureEngagementTables() {
         sql`CREATE INDEX IF NOT EXISTS comments_content_created_idx ON comments (content_id, created_at DESC)`,
         sql`CREATE INDEX IF NOT EXISTS comment_likes_comment_idx ON comment_likes (comment_id)`,
       ]);
-      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'PENDING'`;
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'APPROVED'`;
+      await sql`ALTER TABLE comments ALTER COLUMN status SET DEFAULT 'APPROVED'`;
     })();
   }
   return ready;
