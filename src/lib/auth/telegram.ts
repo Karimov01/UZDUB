@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { createTelegramLoginRequest, replaceTelegramCompletion, verifyTelegramLogin, type TelegramProfile } from "@/lib/movies-store";
+import { createTelegramLoginRequest, replaceTelegramCompletion, verifyTelegramLogin, type StoredUser, type TelegramProfile } from "@/lib/movies-store";
 
 const TEN_MINUTES = 10 * 60 * 1000;
 const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL || "https://uzdub.com").replace(/\/$/, "");
@@ -19,8 +19,8 @@ export async function createTelegramAuthRequest() {
 
 export async function verifyTelegramStart(token: string, profile: TelegramProfile) {
   const completionCode = secureCode();
-  const result = await verifyTelegramLogin(sha256(token), sha256(completionCode), randomUUID(), profile);
-  return { result, completionCode };
+  const verification = await verifyTelegramLogin(sha256(token), sha256(completionCode), randomUUID(), profile);
+  return { result: verification.status, completionCode, userId: verification.userId, isNewUser: verification.isNewUser };
 }
 
 export async function issueBrowserCompletion(loginRequestId: string) {
@@ -32,12 +32,47 @@ export async function issueBrowserCompletion(loginRequestId: string) {
 export function completionUrl(code: string) { return `${siteUrl()}/auth/telegram/complete?code=${encodeURIComponent(code)}`; }
 export function hashCompletionCode(code: string) { return sha256(code); }
 
-export async function sendTelegramMessage(chatId: string, text: string, completionCode?: string) {
+async function sendTelegramPayload(chatId: string, text: string, replyMarkup?: Record<string, unknown>) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error("TELEGRAM_BOT_TOKEN sozlanmagan");
-  const reply_markup = completionCode ? { inline_keyboard: [[{ text: "Saytga kirish", url: completionUrl(completionCode) }]] } : undefined;
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text, reply_markup }) });
-  if (!response.ok) console.error("[telegram-bot] Xabar yuborilmadi", { status: response.status, hasLoginButton: Boolean(completionCode) });
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text, reply_markup: replyMarkup }) });
+  if (!response.ok) throw new Error(`Telegram xabari yuborilmadi (${response.status})`);
+}
+
+export async function sendTelegramMessage(chatId: string, text: string, completionCode?: string) {
+  const replyMarkup = completionCode ? { inline_keyboard: [[{ text: "Saytga kirish", url: completionUrl(completionCode) }]] } : undefined;
+  try { await sendTelegramPayload(chatId, text, replyMarkup); }
+  catch (error) { console.error("[telegram-bot] Xabar yuborilmadi", { hasLoginButton: Boolean(completionCode), error }); }
+}
+
+export async function sendNewUserAdminNotification(recipient: StoredUser, user: StoredUser, totalUsers: number) {
+  const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
+  const username = user.telegramUsername ? `@${user.telegramUsername}` : "Username ko‘rsatilmagan";
+  const date = new Intl.DateTimeFormat("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(user.createdAt));
+  const time = new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(user.createdAt));
+  const text = [
+    "👤 Yangi foydalanuvchi",
+    "",
+    "UZDUB Play'ga yangi foydalanuvchi qo‘shildi.",
+    "",
+    `👤 Ism: ${name}`,
+    `📱 Telegram: ${username}`,
+    `🆔 ID: #${user.telegramId}`,
+    "",
+    "🔐 Kirish: Telegram",
+    "🟢 Holat: Faol",
+    "",
+    `📅 ${date}`,
+    `🕒 ${time}`,
+    "",
+    `👥 Jami foydalanuvchilar: ${totalUsers.toLocaleString("uz-UZ")}`,
+  ].join("\n");
+  const profileUrl = `${siteUrl()}/admin/foydalanuvchilar/${user.id}`;
+  try {
+    await sendTelegramPayload(recipient.telegramId, text, { inline_keyboard: [[{ text: "👤 Profilni ko‘rish", url: profileUrl }]] });
+  } catch (error) {
+    console.error("[telegram-admin-notification] Yangi foydalanuvchi xabari yuborilmadi", { recipientId: recipient.id, error });
+  }
 }
 
 /** Telegram rasmi bo'lsa, bot tokenini oshkor qilmasdan mavjud R2 storage'ga nusxalaydi. */

@@ -14,23 +14,30 @@ let ready: Promise<unknown> | null = null;
 function ensureTable() {
   if (!ready) {
     const sql = db();
-    ready = Promise.all([
+    ready = (async () => {
+      // ALTER TABLE buyruqlari yangi bazada ham ishonchli ishlashi uchun users jadvali avval yaratiladi.
+      await sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, telegram_id TEXT UNIQUE NOT NULL, telegram_username TEXT, first_name TEXT NOT NULL, last_name TEXT, language_code TEXT, telegram_photo_url TEXT, role TEXT NOT NULL DEFAULT 'USER', subscription_type TEXT NOT NULL DEFAULT 'FREE', premium_expires_at TIMESTAMPTZ, is_active BOOLEAN NOT NULL DEFAULT true, telegram_verified BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+      await Promise.all([
       sql`CREATE TABLE IF NOT EXISTS movies (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, data JSONB NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
-      sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, telegram_id TEXT UNIQUE NOT NULL, telegram_username TEXT, first_name TEXT NOT NULL, last_name TEXT, language_code TEXT, telegram_photo_url TEXT, role TEXT NOT NULL DEFAULT 'USER', subscription_type TEXT NOT NULL DEFAULT 'FREE', premium_expires_at TIMESTAMPTZ, is_active BOOLEAN NOT NULL DEFAULT true, telegram_verified BOOLEAN NOT NULL DEFAULT true, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT NOT NULL DEFAULT 'FREE'`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ`,
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_telegram_admin_notifications BOOLEAN NOT NULL DEFAULT false`,
       sql`CREATE TABLE IF NOT EXISTS user_content_lists (user_id TEXT NOT NULL, movie_id TEXT NOT NULL, list_type TEXT NOT NULL CHECK (list_type IN ('FAVORITE', 'WATCH_LATER')), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, movie_id, list_type))`,
       sql`CREATE TABLE IF NOT EXISTS telegram_login_requests (id TEXT PRIMARY KEY, token_hash TEXT UNIQUE NOT NULL, completion_hash TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'PENDING', user_id TEXT, telegram_id TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL, verified_at TIMESTAMPTZ, completion_expires_at TIMESTAMPTZ, used_at TIMESTAMPTZ)`,
-    ]).then(() => sql`CREATE INDEX IF NOT EXISTS user_content_lists_user_type_idx ON user_content_lists (user_id, list_type, created_at DESC)`);
+      ]);
+      await sql`CREATE INDEX IF NOT EXISTS user_content_lists_user_type_idx ON user_content_lists (user_id, list_type, created_at DESC)`;
+      // Ilgari yaratilgan yagona adminni bir marta avtomatik qabul qiluvchi qilamiz.
+      await sql`UPDATE users SET receive_telegram_admin_notifications = true WHERE id = (SELECT id FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN') AND is_active = true ORDER BY created_at ASC LIMIT 1) AND NOT EXISTS (SELECT 1 FROM users WHERE receive_telegram_admin_notifications = true)`;
+    })();
   }
   return ready;
 }
 
 export type TelegramProfile = { telegramId: string; firstName: string; lastName?: string; username?: string; languageCode?: string; photoUrl?: string };
 export type SubscriptionType = "FREE" | "PREMIUM";
-export type StoredUser = { id: string; telegramId: string; telegramUsername?: string; firstName: string; lastName?: string; telegramPhotoUrl?: string; role: string; subscriptionType: SubscriptionType; premiumExpiresAt?: string; isActive: boolean; createdAt: string; lastLoginAt: string };
+export type StoredUser = { id: string; telegramId: string; telegramUsername?: string; firstName: string; lastName?: string; telegramPhotoUrl?: string; role: string; subscriptionType: SubscriptionType; premiumExpiresAt?: string; isActive: boolean; receiveTelegramAdminNotifications: boolean; createdAt: string; lastLoginAt: string };
 export type UserStats = { total: number; free: number; premium: number; admins: number };
 
 export async function createTelegramLoginRequest(id: string, tokenHash: string, expiresAt: Date): Promise<void> {
@@ -50,19 +57,21 @@ export async function getTelegramLoginStatus(id: string): Promise<{ status: stri
   return item;
 }
 
-export async function verifyTelegramLogin(tokenHash: string, completionHash: string, newUserId: string, profile: TelegramProfile): Promise<"VERIFIED" | "EXPIRED" | "INVALID"> {
+export type TelegramLoginVerification = { status: "VERIFIED" | "EXPIRED" | "INVALID"; userId?: string; isNewUser: boolean };
+
+export async function verifyTelegramLogin(tokenHash: string, completionHash: string, newUserId: string, profile: TelegramProfile): Promise<TelegramLoginVerification> {
   await ensureTable(); const sql = db();
   const requests = await sql`UPDATE telegram_login_requests SET status = 'VERIFIED', telegram_id = ${profile.telegramId}, completion_hash = ${completionHash}, verified_at = now(), completion_expires_at = now() + interval '5 minutes' WHERE token_hash = ${tokenHash} AND status = 'PENDING' AND expires_at > now() RETURNING id` as { id: string }[];
   const request = requests[0];
   if (request) {
-    const accounts = await sql`INSERT INTO users (id, telegram_id, telegram_username, first_name, last_name, language_code, telegram_photo_url) VALUES (${newUserId}, ${profile.telegramId}, ${profile.username ?? null}, ${profile.firstName}, ${profile.lastName ?? null}, ${profile.languageCode ?? null}, ${profile.photoUrl ?? null}) ON CONFLICT (telegram_id) DO UPDATE SET telegram_username = EXCLUDED.telegram_username, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, language_code = EXCLUDED.language_code, telegram_photo_url = COALESCE(EXCLUDED.telegram_photo_url, users.telegram_photo_url), updated_at = now(), last_login_at = now(), telegram_verified = true RETURNING id` as { id: string }[];
+    const accounts = await sql`INSERT INTO users (id, telegram_id, telegram_username, first_name, last_name, language_code, telegram_photo_url) VALUES (${newUserId}, ${profile.telegramId}, ${profile.username ?? null}, ${profile.firstName}, ${profile.lastName ?? null}, ${profile.languageCode ?? null}, ${profile.photoUrl ?? null}) ON CONFLICT (telegram_id) DO UPDATE SET telegram_username = EXCLUDED.telegram_username, first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, language_code = EXCLUDED.language_code, telegram_photo_url = COALESCE(EXCLUDED.telegram_photo_url, users.telegram_photo_url), updated_at = now(), last_login_at = now(), telegram_verified = true RETURNING id, (xmax = 0) AS "isNewUser"` as { id: string; isNewUser: boolean }[];
     const account = accounts[0];
     if (!account) throw new Error("Telegram foydalanuvchisi saqlanmadi");
     await sql`UPDATE telegram_login_requests SET user_id = ${account.id} WHERE id = ${request.id} AND status = 'VERIFIED'`;
-    return "VERIFIED";
+    return { status: "VERIFIED", userId: account.id, isNewUser: account.isNewUser };
   }
   const status = await getTelegramLoginStatusByHash(tokenHash);
-  return status === "EXPIRED" ? "EXPIRED" : "INVALID";
+  return { status: status === "EXPIRED" ? "EXPIRED" : "INVALID", isNewUser: false };
 }
 
 async function getTelegramLoginStatusByHash(tokenHash: string): Promise<string | undefined> {
@@ -85,7 +94,7 @@ export async function consumeTelegramCompletion(completionHash: string): Promise
         )
       RETURNING user_id
     )
-    SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE id = (SELECT user_id FROM completed)
+    SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", receive_telegram_admin_notifications AS "receiveTelegramAdminNotifications", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE id = (SELECT user_id FROM completed)
   ` as StoredUser[];
   return rows[0];
 }
@@ -98,25 +107,52 @@ export async function replaceTelegramCompletion(loginRequestId: string, completi
 
 export async function readUsers(): Promise<StoredUser[]> {
   await ensureTable(); const sql = db();
-  return await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users ORDER BY created_at DESC` as StoredUser[];
+  return await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", receive_telegram_admin_notifications AS "receiveTelegramAdminNotifications", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users ORDER BY created_at DESC` as StoredUser[];
 }
 
 export async function getUserStats(): Promise<UserStats> {
   await ensureTable(); const sql = db();
-  const rows = await sql`SELECT COUNT(*) FILTER (WHERE is_active) ::int AS total, COUNT(*) FILTER (WHERE is_active AND subscription_type = 'FREE') ::int AS free, COUNT(*) FILTER (WHERE is_active AND subscription_type = 'PREMIUM') ::int AS premium, COUNT(*) FILTER (WHERE role = 'ADMIN') ::int AS admins FROM users` as UserStats[];
+  const rows = await sql`SELECT COUNT(*) FILTER (WHERE is_active) ::int AS total, COUNT(*) FILTER (WHERE is_active AND subscription_type = 'FREE') ::int AS free, COUNT(*) FILTER (WHERE is_active AND subscription_type = 'PREMIUM') ::int AS premium, COUNT(*) FILTER (WHERE role IN ('ADMIN', 'SUPER_ADMIN')) ::int AS admins FROM users` as UserStats[];
   return rows[0] ?? { total: 0, free: 0, premium: 0, admins: 0 };
 }
 
 export async function getUserProfile(id: string): Promise<StoredUser | undefined> {
   await ensureTable(); const sql = db();
-  const rows = await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE id = ${id} LIMIT 1` as StoredUser[];
+  const rows = await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", receive_telegram_admin_notifications AS "receiveTelegramAdminNotifications", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE id = ${id} LIMIT 1` as StoredUser[];
   return rows[0];
 }
 
 export async function updateUserAdmin(id: string, input: { role: "USER" | "ADMIN"; subscriptionType: SubscriptionType; isActive: boolean }): Promise<StoredUser | undefined> {
   await ensureTable(); const sql = db();
-  const rows = await sql`UPDATE users SET role = ${input.role}, subscription_type = ${input.subscriptionType}, is_active = ${input.isActive}, premium_expires_at = CASE WHEN ${input.subscriptionType} = 'PREMIUM' THEN COALESCE(premium_expires_at, now() + interval '30 days') ELSE NULL END, updated_at = now() WHERE id = ${id} RETURNING id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", created_at AS "createdAt", last_login_at AS "lastLoginAt"` as StoredUser[];
+  const rows = await sql`UPDATE users SET role = ${input.role}, subscription_type = ${input.subscriptionType}, is_active = ${input.isActive}, premium_expires_at = CASE WHEN ${input.subscriptionType} = 'PREMIUM' THEN COALESCE(premium_expires_at, now() + interval '30 days') ELSE NULL END, updated_at = now() WHERE id = ${id} RETURNING id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", receive_telegram_admin_notifications AS "receiveTelegramAdminNotifications", created_at AS "createdAt", last_login_at AS "lastLoginAt"` as StoredUser[];
   return rows[0];
+}
+
+export async function getTelegramNotificationRecipient(): Promise<StoredUser | undefined> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", receive_telegram_admin_notifications AS "receiveTelegramAdminNotifications", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE receive_telegram_admin_notifications = true AND role IN ('ADMIN', 'SUPER_ADMIN') AND is_active = true LIMIT 1` as StoredUser[];
+  return rows[0];
+}
+
+export async function getTelegramNotificationAdmins(): Promise<StoredUser[]> {
+  await ensureTable(); const sql = db();
+  return await sql`SELECT id, telegram_id AS "telegramId", telegram_username AS "telegramUsername", first_name AS "firstName", last_name AS "lastName", telegram_photo_url AS "telegramPhotoUrl", role, subscription_type AS "subscriptionType", premium_expires_at AS "premiumExpiresAt", is_active AS "isActive", receive_telegram_admin_notifications AS "receiveTelegramAdminNotifications", created_at AS "createdAt", last_login_at AS "lastLoginAt" FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN') ORDER BY CASE WHEN role = 'SUPER_ADMIN' THEN 0 ELSE 1 END, created_at ASC` as StoredUser[];
+}
+
+export async function setTelegramNotificationRecipient(id: string): Promise<StoredUser | undefined> {
+  await ensureTable(); const sql = db();
+  const selected = await sql`SELECT id FROM users WHERE id = ${id} AND role IN ('ADMIN', 'SUPER_ADMIN') AND is_active = true AND telegram_id IS NOT NULL LIMIT 1` as { id: string }[];
+  if (!selected[0]) return undefined;
+  await sql`UPDATE users SET receive_telegram_admin_notifications = CASE WHEN id = ${id} THEN true ELSE false END, updated_at = now() WHERE role IN ('ADMIN', 'SUPER_ADMIN')`;
+  return getTelegramNotificationRecipient();
+}
+
+export async function isOnlyAdministrativeUser(id: string): Promise<boolean> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`SELECT COUNT(*)::int AS count FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN') AND is_active = true` as { count: number }[];
+  if (rows[0]?.count !== 1) return false;
+  const user = await getUserProfile(id);
+  return user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 }
 
 export async function getUserListIds(userId: string, type: "FAVORITE" | "WATCH_LATER"): Promise<string[]> {
