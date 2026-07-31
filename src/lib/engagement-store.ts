@@ -62,11 +62,19 @@ export async function toggleCommentLike(commentId: string, userId: string) {
   return false;
 }
 
-export type AdminComment = EngagementComment & { contentTitle?: string; status: "PENDING" | "APPROVED" | "SPAM" | "DELETED" };
+export type AdminComment = EngagementComment & { contentTitle?: string; status: "PENDING" | "APPROVED" | "SPAM" };
 export async function getAdminComments(query: string, status: string, page: number) {
   await ensureEngagementTables(); const sql = db(); const offset = (page - 1) * 20; const term = `%${query}%`;
-  const rows = await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", c.status, u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_username AS "telegramUsername", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COALESCE(m.data->>'title', 'Kontent topilmadi') AS "contentTitle", COUNT(cl.comment_id)::int AS likes, false AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN movies m ON m.id = c.content_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE (${status} = 'ALL' OR c.status = ${status}) AND (${query} = '' OR c.body ILIKE ${term} OR COALESCE(u.telegram_username, '') ILIKE ${term}) GROUP BY c.id, u.id, m.data ORDER BY c.created_at DESC LIMIT 20 OFFSET ${offset}` as unknown as AdminComment[];
-  const counts = await sql`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE status = 'APPROVED')::int AS approved, COUNT(*) FILTER (WHERE status = 'PENDING')::int AS pending, COUNT(*) FILTER (WHERE status = 'SPAM')::int AS spam, COUNT(*) FILTER (WHERE status = 'DELETED')::int AS deleted FROM comments` as unknown as { total:number; approved:number; pending:number; spam:number; deleted:number }[];
-  return { comments: rows, stats: counts[0] ?? { total:0, approved:0, pending:0, spam:0, deleted:0 } };
+  const rows = await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", c.status, u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_username AS "telegramUsername", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COALESCE(m.data->>'title', 'Kontent topilmadi') AS "contentTitle", COUNT(cl.comment_id)::int AS likes, false AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN movies m ON m.id = c.content_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.status <> 'DELETED' AND (${status} = 'ALL' OR c.status = ${status}) AND (${query} = '' OR c.body ILIKE ${term} OR COALESCE(u.telegram_username, '') ILIKE ${term}) GROUP BY c.id, u.id, m.data ORDER BY c.created_at DESC LIMIT 20 OFFSET ${offset}` as unknown as AdminComment[];
+  const counts = await sql`SELECT COUNT(*) FILTER (WHERE status <> 'DELETED')::int AS total, COUNT(*) FILTER (WHERE status = 'APPROVED')::int AS approved, COUNT(*) FILTER (WHERE status = 'PENDING')::int AS pending, COUNT(*) FILTER (WHERE status = 'SPAM')::int AS spam FROM comments` as unknown as { total:number; approved:number; pending:number; spam:number }[];
+  return { comments: rows, stats: counts[0] ?? { total:0, approved:0, pending:0, spam:0 } };
 }
-export async function moderateComments(ids: string[], status: "PENDING" | "APPROVED" | "SPAM" | "DELETED") { await ensureEngagementTables(); const sql = db(); for (const id of ids) await sql`UPDATE comments SET status = ${status}, updated_at = now() WHERE id = ${id}`; }
+export async function moderateComments(ids: string[], status: "PENDING" | "APPROVED" | "SPAM" | "DELETED") {
+  await ensureEngagementTables(); const sql = db();
+  for (const id of ids) {
+    if (status === "DELETED") {
+      await sql`WITH RECURSIVE tree AS (SELECT id FROM comments WHERE id = ${id} UNION ALL SELECT c.id FROM comments c JOIN tree t ON c.parent_id = t.id) DELETE FROM comment_likes WHERE comment_id IN (SELECT id FROM tree)`;
+      await sql`WITH RECURSIVE tree AS (SELECT id FROM comments WHERE id = ${id} UNION ALL SELECT c.id FROM comments c JOIN tree t ON c.parent_id = t.id) DELETE FROM comments WHERE id IN (SELECT id FROM tree)`;
+    } else await sql`UPDATE comments SET status = ${status}, updated_at = now() WHERE id = ${id}`;
+  }
+}
