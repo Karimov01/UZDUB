@@ -9,13 +9,14 @@ const apiType: Record<Key, "FAVORITE" | "WATCH_LATER"> = { favorites: "FAVORITE"
 export function useSavedList(key: Key) {
   const [ids, setIds] = useState<string[]>([]);
   const [databaseMode, setDatabaseMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const local = () => { try { if (alive) setIds(JSON.parse(localStorage.getItem(`uzdub_${key}`) || "[]")); } catch { if (alive) setIds([]); } };
     fetch(`/api/profile/lists?type=${apiType[key]}`, { cache: "no-store" })
       .then(async (response) => ({ response, data: await response.json() }))
-      .then(({ response, data }) => { if (!alive) return; if (response.ok && Array.isArray(data.ids)) { setDatabaseMode(true); setIds(data.ids); } else local(); })
+      .then(({ response, data }) => { if (!alive) return; if (response.ok && Array.isArray(data.ids)) { setDatabaseMode(true); setIsAuthenticated(true); setIds(data.ids); } else local(); })
       .catch(local);
     return () => { alive = false; };
   }, [key]);
@@ -32,5 +33,5 @@ export function useSavedList(key: Key) {
       setIds((current) => data.saved ? (current.includes(id) ? current : [id, ...current]) : current.filter((item) => item !== id));
     } catch { setIds(ids); }
   }, [databaseMode, ids, key]);
-  return { ids, has, toggle, databaseMode };
+  return { ids, has, toggle, databaseMode, isAuthenticated };
 }

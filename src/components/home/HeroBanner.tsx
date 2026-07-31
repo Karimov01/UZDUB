@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,6 +10,7 @@ import { formatDuration } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import type { Movie } from "@/types/movie";
+import { useSavedList } from "@/hooks/useSavedList";
 
 interface HeroBannerProps {
   movies: Movie[];
@@ -17,6 +19,9 @@ interface HeroBannerProps {
 export default function HeroBanner({ movies }: HeroBannerProps) {
   const [current, setCurrent] = useState(0);
   const [imgError, setImgError] = useState<Record<number, boolean>>({});
+  const [toast, setToast] = useState("");
+  const router = useRouter();
+  const later = useSavedList("watchLater");
 
   useEffect(() => {
     if (movies.length <= 1) return;
@@ -31,6 +36,13 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
   const movie = movies[current];
   const href =
     movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
+  const saved = later.has(movie.id);
+  const toggleLater = () => {
+    if (!later.isAuthenticated) return router.push("/kirish");
+    later.toggle(movie.id);
+    setToast(saved ? "Keyin ko‘raman ro‘yxatidan olib tashlandi" : "Keyin ko‘raman ro‘yxatiga qo‘shildi");
+    window.setTimeout(() => setToast(""), 2200);
+  };
 
   return (
     <div className="relative w-full h-[88vh] min-h-[500px] overflow-hidden">
@@ -160,13 +172,15 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                 </Button>
               </Link>
               <button
+                onClick={toggleLater}
+                aria-label={saved ? "Keyin ko‘raman ro‘yxatidan olib tashlash" : "Keyin ko‘ramanga qo‘shish"}
                 className="p-3 rounded-xl transition-all hover:bg-white/12"
                 style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid var(--border)",
+                  background: saved ? "rgba(124,58,237,.28)" : "rgba(255,255,255,0.08)",
+                  border: saved ? "1px solid rgba(168,85,247,.7)" : "1px solid var(--border)",
                 }}
               >
-                <Plus className="h-5 w-5 text-white" />
+                {saved ? <span className="text-lg leading-none text-white">✓</span> : <Plus className="h-5 w-5 text-white" />}
               </button>
             </div>
           </motion.div>
@@ -211,6 +225,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           </button>
         </>
       )}
+      {toast && <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 px-4 py-2.5 rounded-xl text-sm text-white" style={{ background: "rgba(28,20,47,.96)", border: "1px solid rgba(168,85,247,.6)", boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>{toast}</div>}
     </div>
   );
 }
