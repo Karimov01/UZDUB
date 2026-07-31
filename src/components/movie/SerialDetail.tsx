@@ -14,6 +14,7 @@ import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
 import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
+import EngagementPanel from "@/components/engagement/EngagementPanel";
 
 export default function SerialDetail({ serial, similarMovies = [] }: { serial: Movie; similarMovies?: Movie[] }) {
   const similar = similarMovies.filter(
@@ -152,6 +153,8 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
       </div>
 
       {episodes.length > 0 && <SeasonEpisodeSelector slug={serial.slug} episodes={episodes} title={serial.title} />}
+
+      <EngagementPanel content={serial} />
 
       {/* Similar serials */}
       {similar.length > 0 && (
