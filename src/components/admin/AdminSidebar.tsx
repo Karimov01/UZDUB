@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   Play, LayoutDashboard, Film, Tv, Users, Settings,
-  BarChart3, Tag, LogOut, ChevronRight, Home,
+  BarChart3, Tag, LogOut, ChevronRight, Home, MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ const navItems = [
   { label: "Seriallar", href: "/admin/seriallar", icon: Tv },
   { label: "Foydalanuvchilar", href: "/admin/foydalanuvchilar", icon: Users },
   { label: "Janrlar", href: "/admin/janrlar", icon: Tag },
+  { label: "Izohlar", href: "/admin/izohlar", icon: MessageCircle },
   { label: "Statistika", href: "/admin/statistika", icon: BarChart3 },
   { label: "Sozlamalar", href: "/admin/sozlamalar", icon: Settings },
 ];
