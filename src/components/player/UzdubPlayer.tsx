@@ -92,6 +92,7 @@ type Props = { src?: string; poster?: string | null; movieId?: string; episodeId
 export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const onEndedRef = useRef(onEnded);
+  const embedSavedRef = useRef(false);
   onEndedRef.current = onEnded;
 
   useEffect(() => {
@@ -172,8 +173,16 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
   }, [src, poster, movieId, episodeId]);
 
   const directSource = src && /\.(m3u8|mp4|webm|mov)(?:$|[?#])/i.test(src) ? src : undefined;
+  const isEmbedSource = Boolean(src && /(youtube\.com|youtu\.be|ok\.ru|odnoklassniki\.ru|mover\.uz)/i.test(src));
+  const saveEmbedStart = () => {
+    if (!isEmbedSource || !movieId || embedSavedRef.current) return;
+    embedSavedRef.current = true;
+    // Iframe ichidagi vaqtni o'qish cross-origin xavfsizlik qoidasi bilan taqiqlangan.
+    // Shuning uchun bunday manbalarda foydalanuvchi tomoshani boshlagani saqlanadi.
+    void fetch("/api/profile/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ movieId, episodeId, positionSeconds: 1, durationSeconds: 0, completed: false }) }).catch(() => {});
+  };
   return (
-    <div ref={ref} style={{ width: "100%", aspectRatio: "16 / 9" }} role="region" aria-label="Video player">
+    <div ref={ref} onPointerDownCapture={saveEmbedStart} style={{ width: "100%", aspectRatio: "16 / 9" }} role="region" aria-label="Video player">
       <video
         className="uzdub-seo-video"
         controls
