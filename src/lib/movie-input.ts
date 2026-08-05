@@ -94,5 +94,7 @@ export function mapEpisodes(input: MovieInputData["episodes"], movieId: string, 
     videoUrl: e.videoUrl || undefined,
     duration: e.duration,
     viewCount: e.id ? existingById.get(e.id)?.viewCount ?? 0 : 0,
+    createdAt: e.id ? existingById.get(e.id)?.createdAt : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }));
 }

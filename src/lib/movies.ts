@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { HeroMovieData, Movie, MovieCardData } from "@/types/movie";
+import type { Episode, HeroMovieData, Movie, MovieCardData } from "@/types/movie";
 import { readMovies } from "@/lib/movies-store";
 
 // Baza + demo kinolar. React cache — bir render ichida bitta DB o'qish.
@@ -80,6 +80,36 @@ export interface HomePageData {
   trending: MovieCardData[];
   serials: MovieCardData[];
   newest: MovieCardData[];
+  latestEpisodes: LatestEpisode[];
+}
+
+export interface LatestEpisode {
+  serial: MovieCardData;
+  episode: Pick<Episode, "id" | "season" | "episode" | "title" | "duration" | "viewCount" | "createdAt" | "updatedAt">;
+  addedAt: string;
+}
+
+function episodeTimestamp(serial: Movie, episode: Episode): string {
+  return episode.createdAt ?? episode.updatedAt ?? episode.airDate ?? serial.updatedAt ?? serial.createdAt ?? "1970-01-01T00:00:00.000Z";
+}
+
+/** Faqat tomosha havolasi berilgan serial qismlarini yangi qo'shilganidan saralaydi. */
+export function getLatestEpisodesFromMovies(movies: Movie[], limit = 24): LatestEpisode[] {
+  return movies
+    .filter((movie) => movie.type === "SERIAL")
+    .flatMap((serial) => (serial.episodes ?? [])
+      .filter((episode) => Boolean(episode.videoUrl?.trim()))
+      .map((episode) => ({
+        serial: toCardData(serial),
+        episode: { id: episode.id, season: episode.season, episode: episode.episode, title: episode.title, duration: episode.duration, viewCount: episode.viewCount, createdAt: episode.createdAt, updatedAt: episode.updatedAt },
+        addedAt: episodeTimestamp(serial, episode),
+      })))
+    .sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt))
+    .slice(0, limit);
+}
+
+export async function getLatestEpisodes(limit = 24): Promise<LatestEpisode[]> {
+  return getLatestEpisodesFromMovies(await getPublishedMovies(), limit);
 }
 
 /**
@@ -100,5 +130,6 @@ export const getHomePageData = cache(async (): Promise<HomePageData> => {
     trending: published.filter((m) => m.isTrending).slice(0, 10).map(toCardData),
     serials: published.filter((m) => m.type === "SERIAL").slice(0, 10).map(toCardData),
     newest: published.slice(0, 10).map(toCardData),
+    latestEpisodes: getLatestEpisodesFromMovies(published, 10),
   };
 });

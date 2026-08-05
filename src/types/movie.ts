@@ -39,6 +39,8 @@ export interface Episode {
   duration?: number;
   viewCount: number;
   airDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
   progress?: number;
   completed?: boolean;
 }
