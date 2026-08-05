@@ -176,6 +176,8 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
+                aria-label={`${i + 1}-slaydni ko'rsatish`}
+                aria-current={i === current ? "true" : undefined}
                 className="transition-all duration-300 rounded-full"
                 style={{
                   height: "4px",

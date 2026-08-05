@@ -112,7 +112,7 @@ export default function Header() {
                 <Bell className="h-5 w-5" />
               </button>
 
-              <Link href={user ? "/profilim" : "/kirish"} className="min-w-[104px]">
+              <Link href={user ? "/profilim" : "/kirish"} className="hidden sm:block min-w-[104px]" aria-label={user ? "Profilim" : "Kirish"}>
                 <Button size="sm" className="hidden sm:flex w-full justify-center">
                   <User className="h-4 w-4" />
                   {user ? profileLabel : "Kirish"}

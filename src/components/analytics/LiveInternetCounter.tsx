@@ -7,8 +7,11 @@ export default function LiveInternetCounter() {
   useEffect(() => {
     const image = document.getElementById("licnt6E5C") as HTMLImageElement | null;
     if (!image) return;
-    const screenData = window.screen;
-    image.src = `https://counter.yadro.ru/hit?t20.8;r${escape(document.referrer)};s${screenData.width}*${screenData.height}*${screenData.colorDepth || screenData.pixelDepth};u${escape(document.URL)};h${escape(document.title.substring(0, 150))};${Math.random()}`;
+    const timer = window.setTimeout(() => {
+      const screenData = window.screen;
+      image.src = `https://counter.yadro.ru/hit?t20.8;r${escape(document.referrer)};s${screenData.width}*${screenData.height}*${screenData.colorDepth || screenData.pixelDepth};u${escape(document.URL)};h${escape(document.title.substring(0, 150))};${Math.random()}`;
+    }, 5000);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (

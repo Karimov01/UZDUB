@@ -7,9 +7,9 @@ function typeOf(value: string | null): ListType | undefined { return value === "
 
 export async function GET(request: Request) {
   const session = await auth(); const userId = session?.user?.id; const type = typeOf(new URL(request.url).searchParams.get("type"));
-  if (!userId) return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
+  if (!userId) return NextResponse.json({ ids: [], authenticated: false }, { headers: { "Cache-Control": "private, no-store" } });
   if (!type) return NextResponse.json({ error: "Ro'yxat turi noto'g'ri" }, { status: 400 });
-  return NextResponse.json({ ids: await getUserListIds(userId, type) }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ ids: await getUserListIds(userId, type), authenticated: true }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {

@@ -52,38 +52,43 @@ export default function Footer() {
             </p>
             <div className="flex gap-3">
               <a
-                href="#"
+                href="https://t.me/Uzdubplay_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="UZDUB Play Telegram boti"
                 className="p-2 rounded-lg transition-all hover:bg-white/8"
                 style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
               >
                 <PlayCircle className="h-4 w-4" />
               </a>
-              <a
-                href="#"
+              <Link
+                href="/boglanish"
+                aria-label="UZDUB Play bilan bog'lanish"
                 className="p-2 rounded-lg transition-all hover:bg-white/8"
                 style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
               >
                 <MessageCircle className="h-4 w-4" />
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                href="/haqimizda"
+                aria-label="UZDUB Play haqida"
                 className="p-2 rounded-lg transition-all hover:bg-white/8"
                 style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
               >
                 <Globe className="h-4 w-4" />
-              </a>
+              </Link>
             </div>
           </div>
 
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4
+              <h2
                 className="font-semibold mb-4 text-sm"
                 style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}
               >
                 {title}
-              </h4>
+              </h2>
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>

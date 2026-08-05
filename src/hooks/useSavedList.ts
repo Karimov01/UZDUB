@@ -16,7 +16,7 @@ export function useSavedList(key: Key) {
     const local = () => { try { if (alive) setIds(JSON.parse(localStorage.getItem(`uzdub_${key}`) || "[]")); } catch { if (alive) setIds([]); } };
     fetch(`/api/profile/lists?type=${apiType[key]}`, { cache: "no-store" })
       .then(async (response) => ({ response, data: await response.json() }))
-      .then(({ response, data }) => { if (!alive) return; if (response.ok && Array.isArray(data.ids)) { setDatabaseMode(true); setIsAuthenticated(true); setIds(data.ids); } else local(); })
+      .then(({ response, data }) => { if (!alive) return; if (response.ok && data.authenticated === true && Array.isArray(data.ids)) { setDatabaseMode(true); setIsAuthenticated(true); setIds(data.ids); } else local(); })
       .catch(local);
     return () => { alive = false; };
   }, [key]);
