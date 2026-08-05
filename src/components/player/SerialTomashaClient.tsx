@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Eye, Play, Sparkles, VideoOff, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Play, Send, Share2, Sparkles, VideoOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Movie, Episode } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
 import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
+import EngagementPanel from "@/components/engagement/EngagementPanel";
 
 export default function SerialTomashaClient({ serial, initialSeason, initialEpisode }: { serial: Movie; initialSeason?: number; initialEpisode?: number }) {
   const searchParams = useSearchParams();
@@ -48,6 +50,11 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
     const timer = window.setTimeout(() => setNextCountdown((value) => value === null ? null : value - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [nextCountdown, nextEpisode, router, serial.slug]);
+  const share = async () => {
+    const url = window.location.href;
+    if (navigator.share) await navigator.share({ title: episodeHeading, url });
+    else { await navigator.clipboard.writeText(url); window.alert("Havola nusxalandi"); }
+  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#000" }}>
@@ -120,6 +127,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
         {currentEp.description && (
           <p className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{currentEp.description}</p>
         )}
+        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]"><section className="flex min-w-0 gap-3 rounded-2xl p-3.5 md:p-4" style={{ background: "linear-gradient(145deg, rgba(25,18,42,.82), rgba(11,12,21,.94))", border: "1px solid rgba(167,139,250,.22)" }}>{serial.posterUrl ? <div className="relative h-24 w-[68px] shrink-0 overflow-hidden rounded-lg bg-black/30"><Image src={serial.posterUrl} alt="" fill sizes="68px" className="object-cover" /></div> : null}<div className="min-w-0 flex-1"><h2 className="truncate text-base font-bold text-white">{serial.title}</h2><p className="mt-2 text-sm text-violet-200">{serial.imdbRating ? `IMDb ${serial.imdbRating.toFixed(1)}` : "UZDUB Play"}{serial.internalRating ? ` · UZDUB ${serial.internalRating.toFixed(1)}` : ""}</p><p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>{[serial.country, serial.genres?.slice(0, 2).map((genre) => genre.name).join(", ")].filter(Boolean).join(" · ")}</p><Link href={`/serial/${serial.slug}`} className="mt-3 inline-flex items-center gap-1 text-sm text-violet-200 hover:text-white"><ChevronLeft className="h-4 w-4" />Serial sahifasiga qaytish</Link></div></section><div className="grid grid-cols-2 overflow-hidden rounded-2xl" style={{ background: "rgba(17,13,29,.72)", border: "1px solid rgba(167,139,250,.22)" }}>{serial.trailerUrl ? <a href={serial.trailerUrl} target="_blank" rel="noreferrer" className="flex min-h-20 flex-col items-center justify-center gap-1.5 text-sm font-medium text-white hover:bg-white/[.05]"><Sparkles className="h-5 w-5 text-violet-300" />Trailer</a> : <span />}{/* Yuklab olish ataylab ko'rsatilmaydi. */}<span /><button type="button" onClick={() => void share()} className="flex min-h-20 flex-col items-center justify-center gap-1.5 border-t text-sm font-medium text-white hover:bg-white/[.05]" style={{ borderColor: "rgba(167,139,250,.2)" }}><Share2 className="h-5 w-5 text-violet-300" />Ulashish</button><a href="https://t.me/Uzdubplay_bot" target="_blank" rel="noreferrer" className="flex min-h-20 flex-col items-center justify-center gap-1.5 border-l border-t text-sm font-medium text-white hover:bg-white/[.05]" style={{ borderColor: "rgba(167,139,250,.2)" }}><Send className="h-5 w-5 text-violet-300" />Telegram kanal</a></div></div>
 
       </div>
       </div>
@@ -127,6 +135,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
         <SeasonEpisodeSelector slug={serial.slug} episodes={eps.filter((episode) => Boolean(episode.videoUrl?.trim()))} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} sidebar />
       </aside>
       </main>
+      <EngagementPanel content={serial} />
     </div>
   );
 }
