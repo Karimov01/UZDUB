@@ -88,6 +88,34 @@ export interface Movie {
   updatedAt?: string;
 }
 
+/** Bosh sahifa kartasi uchun faqat renderga kerak bo'ladigan yengil ma'lumot. */
+export type MovieCardData = Pick<
+  Movie,
+  | "id"
+  | "slug"
+  | "title"
+  | "posterUrl"
+  | "type"
+  | "year"
+  | "duration"
+  | "imdbRating"
+  | "viewCount"
+  | "isTrending"
+  | "isPremium"
+>;
+
+/** Hero uchun karta ma'lumotidan tashqari zarur qisqa metadata. */
+export type HeroMovieData = MovieCardData &
+  Pick<
+    Movie,
+    | "backdropUrl"
+    | "shortDesc"
+    | "country"
+    | "dubbing"
+    | "isFeatured"
+    | "genres"
+  >;
+
 export interface User {
   id: string;
   telegramId: string;

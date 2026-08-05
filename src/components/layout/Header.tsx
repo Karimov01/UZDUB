@@ -21,10 +21,16 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/auth/session", { cache: "no-store" })
+    const loadSession = () => fetch("/api/auth/session", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : null)
       .then((session) => setUser(session?.user ?? null))
       .catch(() => setUser(null));
+    const idle = window.requestIdleCallback?.(loadSession, { timeout: 1800 });
+    const timeout = idle === undefined ? window.setTimeout(loadSession, 500) : undefined;
+    return () => {
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      if (timeout !== undefined) window.clearTimeout(timeout);
+    };
   }, []);
 
   const profileLabel = user?.name?.split(" ")[0] || "Profilim";
@@ -48,7 +54,7 @@ export default function Header() {
         }
       >
         <div className="max-w-[1400px] mx-auto px-4 md:px-8">
-          <div className="flex items-center h-16 md:h-18 gap-6">
+          <div className="flex items-center h-16 md:h-[72px] gap-6">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
               <div
@@ -96,23 +102,26 @@ export default function Header() {
             <div className="flex items-center gap-2">
               <Link
                 href="/qidirish"
+                aria-label="Qidirish"
                 className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all"
               >
                 <Search className="h-5 w-5" />
               </Link>
 
-              <button className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all hidden sm:flex">
+              <button type="button" aria-label="Bildirishnomalar" className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all hidden sm:flex">
                 <Bell className="h-5 w-5" />
               </button>
 
-              <Link href={user ? "/profilim" : "/kirish"}>
-                <Button size="sm" className="hidden sm:flex">
+              <Link href={user ? "/profilim" : "/kirish"} className="min-w-[104px]">
+                <Button size="sm" className="hidden sm:flex w-full justify-center">
                   <User className="h-4 w-4" />
                   {user ? profileLabel : "Kirish"}
                 </Button>
               </Link>
 
               <button
+                type="button"
+                aria-label={mobileOpen ? "Menyuni yopish" : "Menyuni ochish"}
                 className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all"
                 onClick={() => setMobileOpen(!mobileOpen)}
               >

@@ -4,16 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import { Play, Plus, Info, Star, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import type { Movie } from "@/types/movie";
+import type { HeroMovieData } from "@/types/movie";
 import { useSavedList } from "@/hooks/useSavedList";
 
 interface HeroBannerProps {
-  movies: Movie[];
+  movies: HeroMovieData[];
 }
 
 export default function HeroBanner({ movies }: HeroBannerProps) {
@@ -47,21 +46,14 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
   return (
     <div className="relative w-full h-[88vh] min-h-[500px] overflow-hidden">
       {/* Background */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          className="absolute inset-0"
-        >
+      <div key={current} className="absolute inset-0 animate-in fade-in duration-700">
           {movie.backdropUrl && !imgError[current] ? (
             <Image
               src={movie.backdropUrl}
               alt={movie.title}
               fill
-              priority
+              priority={current === 0}
+              fetchPriority={current === 0 ? "high" : "auto"}
               className="object-cover"
               sizes="100vw"
               onError={() => setImgError((p) => ({ ...p, [current]: true }))}
@@ -72,8 +64,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
               style={{ background: "linear-gradient(135deg, #0A0A0F, #1a0a2e)" }}
             />
           )}
-        </motion.div>
-      </AnimatePresence>
+      </div>
 
       {/* Overlays */}
       <div
@@ -93,15 +84,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
       {/* Content */}
       <div className="relative h-full max-w-[1400px] mx-auto px-4 md:px-8 flex flex-col justify-end pb-16 md:pb-24">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-2xl"
-          >
+          <div key={current} className="max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500">
             {/* Badges */}
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               {movie.isTrending && <Badge variant="pink">🔥 Trend</Badge>}
@@ -183,8 +166,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                 {saved ? <span className="text-lg leading-none text-white">✓</span> : <Plus className="h-5 w-5 text-white" />}
               </button>
             </div>
-          </motion.div>
-        </AnimatePresence>
+          </div>
 
         {/* Slide indicators */}
         {movies.length > 1 && (

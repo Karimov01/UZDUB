@@ -1,15 +1,11 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { Star, Eye, Flame } from "lucide-react";
-import { fadeInUp, staggerChildren } from "@/lib/animations";
 import { formatViewCount } from "@/lib/utils";
-import type { Movie } from "@/types/movie";
+import type { MovieCardData } from "@/types/movie";
 
 interface TrendingSectionProps {
-  movies: Movie[];
+  movies: MovieCardData[];
 }
 
 export default function TrendingSection({ movies }: TrendingSectionProps) {
@@ -17,11 +13,7 @@ export default function TrendingSection({ movies }: TrendingSectionProps) {
 
   return (
     <section className="py-6 px-4 md:px-8 max-w-[1400px] mx-auto">
-      <motion.h2
-        variants={fadeInUp}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
+      <h2
         className="text-xl md:text-2xl font-bold text-white mb-5"
         style={{ fontFamily: "var(--font-display)" }}
       >
@@ -29,23 +21,17 @@ export default function TrendingSection({ movies }: TrendingSectionProps) {
           <Flame className="h-5 w-5 md:h-6 md:w-6 text-orange-400" />
           Bugungi Trendlar
         </span>
-      </motion.h2>
+      </h2>
 
-      <motion.div
-        variants={staggerChildren}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
-      >
-        {movies.slice(0, 10).map((movie, index) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {movies.map((movie, index) => {
           const href =
             movie.type === "SERIAL"
               ? `/serial/${movie.slug}`
               : `/kino/${movie.slug}`;
 
           return (
-            <motion.div key={movie.id} variants={fadeInUp}>
+            <div key={movie.id}>
               <Link href={href} className="group flex items-center gap-3">
                 {/* Big number */}
                 <span
@@ -101,10 +87,10 @@ export default function TrendingSection({ movies }: TrendingSectionProps) {
                   </div>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           );
         })}
-      </motion.div>
+      </div>
     </section>
   );
 }

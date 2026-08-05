@@ -6,15 +6,13 @@ import HeroBanner from "@/components/home/HeroBanner";
 import CategoryRow from "@/components/home/CategoryRow";
 import TrendingSection from "@/components/home/TrendingSection";
 import { HeroSkeleton, MovieCardSkeleton } from "@/components/ui/Skeleton";
-import { getFeatured, getTrending, getSerials, getPublishedMovies } from "@/lib/movies";
+import { getHomePageData } from "@/lib/movies";
 
 export const revalidate = 60;
 export const metadata: Metadata = { title: "O'zbek tilidagi kino va seriallar", description: "O'zbek tilidagi kino va seriallarni yuqori sifatda tomosha qiling." };
 
 export default async function HomePage() {
-  const [featured, trending, serials, allMovies] = await Promise.all([getFeatured(), getTrending(), getSerials(), getPublishedMovies()]);
-  const mostViewed = [...allMovies].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0));
-  const newest = allMovies.slice(0, 12);
+  const { featured, mostViewed, trending, serials, newest } = await getHomePageData();
   return <div style={{ background: "var(--bg-primary)" }}>
     <Suspense fallback={<HeroSkeleton />}><HeroBanner movies={featured} /></Suspense>
     <div className="relative z-10 -mt-8">
