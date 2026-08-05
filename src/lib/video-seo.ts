@@ -23,7 +23,10 @@ export function isPublicDirectVideoUrl(value?: string) {
     const url = new URL(value);
     if (url.protocol !== "https:") return false;
     if (!/\.(m3u8|mp4|webm|mov)$/i.test(url.pathname)) return false;
-    return !["token", "signature", "sig", "expires", "expiry", "policy", "key"].some((key) => url.searchParams.has(key));
+    // Qisqa muddatli imzolangan URL Google Video sitemap uchun yaroqsiz.
+    // Parametr nomi turlicha bo'lishi mumkin, shuning uchun barcha query kalitlari tekshiriladi.
+    const unsafe = /^(token|signature|sig|expires|expiry|policy|key|md5|hash|auth|x-amz-|x-goog-)/i;
+    return ![...url.searchParams.keys()].some((key) => unsafe.test(key));
   } catch {
     return false;
   }
@@ -37,7 +40,7 @@ export function durationToIso(minutes?: number) {
 }
 
 function thumbnail(movie: Movie) {
-  const value = movie.posterUrl || movie.backdropUrl;
+  const value = movie.backdropUrl || movie.posterUrl;
   return value?.startsWith("https://") ? value : undefined;
 }
 
@@ -74,7 +77,7 @@ export function getMovieVideoData(movie: Movie): VideoData | undefined {
 
 export function getEpisodeVideoData(serial: Movie, episode: Episode): VideoData | undefined {
   const videoUrl = episode.videoUrl || serial.videoUrl;
-  const poster = thumbnail(serial);
+  const poster = (episode.previewUrl?.startsWith("https://") ? episode.previewUrl : undefined) || thumbnail(serial);
   const uploadDate = episodePublishDate(serial, episode);
   if (!videoUrl || !poster || !uploadDate) return undefined;
   const label = episode.season === 1 ? `${episode.episode}-qism` : `${episode.season}-fasl ${episode.episode}-qism`;
