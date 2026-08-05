@@ -21,16 +21,12 @@ import type { Movie } from "@/types/movie";
 
 type Comment = {
   id: string;
-  body: string;
-  parentId?: string;
+  text: string;
+  parentComment?: string;
   createdAt: string;
-  firstName: string;
-  lastName?: string;
-  telegramUsername?: string;
-  telegramPhotoUrl?: string;
-  role: string;
-  likes: number;
+  likesCount: number;
   likedByMe: boolean;
+  author: { id: string; displayName: string; avatar?: string; role: string };
 };
 type Data = {
   rating: { average: number; count: number; myScore: number };
@@ -62,10 +58,7 @@ const ago = (date: string) => {
         ? `${Math.floor(minutes / 60)} soat oldin`
         : new Date(date).toLocaleDateString("uz-UZ");
 };
-const nameOf = (c: Comment) =>
-  c.telegramUsername
-    ? `@${c.telegramUsername}`
-    : `${c.firstName} ${c.lastName ?? ""}`.trim();
+const nameOf = (c: Comment) => c.author.displayName || "Foydalanuvchi";
 
 export default function EngagementPanel({ content }: { content: Movie }) {
   const [data, setData] = useState<Data | null>(null),
@@ -184,8 +177,8 @@ export default function EngagementPanel({ content }: { content: Movie }) {
     const roots: Comment[] = [];
     const replies = new Map<string, Comment[]>();
     for (const c of data?.comments ?? []) {
-      if (c.parentId)
-        replies.set(c.parentId, [...(replies.get(c.parentId) ?? []), c]);
+      if (c.parentComment)
+        replies.set(c.parentComment, [...(replies.get(c.parentComment) ?? []), c]);
       else roots.push(c);
     }
     return { roots, replies };
@@ -202,14 +195,14 @@ export default function EngagementPanel({ content }: { content: Movie }) {
       className="h-9 w-9 shrink-0 rounded-full overflow-hidden flex items-center justify-center text-white font-bold"
       style={{ background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}
     >
-      {comment.telegramPhotoUrl ? (
+      {comment.author.avatar ? (
         <img
-          src={comment.telegramPhotoUrl}
+          src={comment.author.avatar}
           alt=""
           className="h-full w-full object-cover"
         />
       ) : (
-        comment.firstName[0]
+        nameOf(comment)[0]
       )}
     </div>
   );
@@ -226,13 +219,13 @@ export default function EngagementPanel({ content }: { content: Movie }) {
         <div className="flex justify-between gap-2 mb-2">
           <div className="min-w-0">
             <p className="text-xs font-semibold text-violet-200">
-              ↪ {nameOf(target)} ga javob
+              ↪ {nameOf(target)} uchun javob
             </p>
             <p
               className="text-xs truncate"
               style={{ color: "var(--text-muted)" }}
             >
-              {target.body}
+              {target.text}
             </p>
           </div>
           <button onClick={() => setReplyTo(null)} className="text-gray-400">
@@ -290,7 +283,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <b className="text-sm text-white">{nameOf(comment)}</b>
-            {(comment.role === "ADMIN" || comment.role === "SUPER_ADMIN") && (
+            {(comment.author.role === "ADMIN" || comment.author.role === "SUPER_ADMIN") && (
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded text-violet-100"
                 style={{ background: "rgba(124,58,237,.36)" }}
@@ -315,7 +308,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
                 className="text-xs truncate"
                 style={{ color: "var(--text-muted)" }}
               >
-                {parent.body}
+              {parent.text}
               </p>
             </div>
           )}
@@ -323,7 +316,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
             className="mt-1.5 text-sm leading-relaxed"
             style={{ color: "var(--text-secondary)" }}
           >
-            {comment.body}
+            {comment.text}
           </p>
           <div className="mt-3 flex gap-4">
             <button
@@ -333,7 +326,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
               <ThumbsUp
                 className={`h-3.5 w-3.5 ${comment.likedByMe ? "fill-current" : ""}`}
               />
-              {comment.likes}
+              {comment.likesCount}
             </button>
             {data?.canComment && !parent && (
               <button
