@@ -22,7 +22,6 @@ export default function ExpandableText({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- DOM o'lchash render'dan keyin bo'ladi
     setTruncated(el.scrollHeight > el.clientHeight + 1);
   }, [text]);
 
