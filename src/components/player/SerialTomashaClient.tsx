@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Eye, VideoOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Movie, Episode } from "@/types/movie";
@@ -10,6 +10,7 @@ import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/Se
 
 export default function SerialTomashaClient({ serial, initialSeason, initialEpisode }: { serial: Movie; initialSeason?: number; initialEpisode?: number }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const epNum = parseInt(searchParams.get("ep") ?? String(initialEpisode ?? "1"));
 
   // Haqiqiy qismlar (admin qo'shgan). Bo'lmasa — serialning o'z videosidan bitta qism
@@ -49,7 +50,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%, rgba(168,85,247,0.46), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,0.28), transparent 48%)" }} />
           <div className="relative overflow-hidden rounded-[15px] md:rounded-[23px] bg-black" onPointerDownCapture={() => setShowIndicator(false)}>
         {videoSrc ? (
-          <UzdubPlayer key={currentEp.id} src={videoSrc} poster={serial.backdropUrl || serial.posterUrl} />
+          <UzdubPlayer key={currentEp.id} src={videoSrc} poster={serial.backdropUrl || serial.posterUrl} movieId={serial.id} episodeId={currentEp.id} onEnded={nextEpisode ? () => router.push(`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`) : undefined} />
         ) : (
           <div className="w-full flex flex-col items-center justify-center gap-3 text-center" style={{ aspectRatio: "16 / 9", background: "#0d0d12" }}>
             <VideoOff className="h-10 w-10" style={{ color: "var(--text-muted)" }} />

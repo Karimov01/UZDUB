@@ -22,7 +22,7 @@ export default function TomashaClient({ movie }: { movie: Movie }) {
           <div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%, rgba(168,85,247,0.46), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,0.28), transparent 48%)" }} />
           <div className="overflow-hidden rounded-[15px] md:rounded-[23px] bg-black">
         {movie.videoUrl ? (
-          <UzdubPlayer src={movie.videoUrl} poster={movie.backdropUrl || movie.posterUrl} />
+          <UzdubPlayer src={movie.videoUrl} poster={movie.backdropUrl || movie.posterUrl} movieId={movie.id} />
         ) : (
           <div className="w-full flex flex-col items-center justify-center gap-3 text-center" style={{ aspectRatio: "16 / 9", background: "#0d0d12" }}>
             <VideoOff className="h-10 w-10" style={{ color: "var(--text-muted)" }} />
