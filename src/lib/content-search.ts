@@ -18,9 +18,9 @@ export function searchMovies(movies: Movie[], input: SearchInput) {
     if (input.type && movie.type !== input.type) return false;
     if (q && ![movie.title, movie.originalTitle, movie.description, movie.shortDesc].some(match)) return false;
     if (input.genres.length && !input.genres.every((genre) => movie.genres?.some((item) => normalizeSearch(item.slug) === genre || normalizeSearch(item.name) === genre))) return false;
-    if (input.country && normalizeSearch(movie.country) !== normalizeSearch(input.country)) return false;
-    if (input.language && normalizeSearch(movie.language) !== normalizeSearch(input.language)) return false;
-    if (input.dubbing && normalizeSearch(movie.dubbing) !== normalizeSearch(input.dubbing)) return false;
+    if (input.country && normalizeSearch(movie.country) !== normalizeSearch(input.country ?? "")) return false;
+    if (input.language && normalizeSearch(movie.language) !== normalizeSearch(input.language ?? "")) return false;
+    if (input.dubbing && normalizeSearch(movie.dubbing) !== normalizeSearch(input.dubbing ?? "")) return false;
     if (input.from && (movie.year ?? 0) < input.from) return false;
     if (input.to && (movie.year ?? 9999) > input.to) return false;
     return !(input.rating && (movie.imdbRating ?? 0) < input.rating);
