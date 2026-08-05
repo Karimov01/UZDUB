@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMovieBySlug, getPublishedMovies } from "@/lib/movies";
+import { getRecommendations } from "@/lib/recommendations";
 import KinoDetail from "@/components/movie/KinoDetail";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildMovieMetadata, buildMovieJsonLd } from "@/lib/seo";
@@ -22,7 +23,7 @@ export default async function KinoPage({ params }: { params: Promise<{ slug: str
   return (
     <>
       <JsonLd data={buildMovieJsonLd(movie)} />
-      <KinoDetail movie={movie} similarMovies={allMovies} />
+      <KinoDetail movie={movie} similarMovies={getRecommendations(movie, allMovies).map((item) => item.movie)} />
     </>
   );
 }

@@ -16,9 +16,7 @@ import EngagementPanel from "@/components/engagement/EngagementPanel";
 import type { Movie } from "@/types/movie";
 
 export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie; similarMovies?: Movie[] }) {
-  const similar = similarMovies.filter(
-    (m) => m.id !== movie.id && m.genres?.some((g) => movie.genres?.some((mg) => mg.id === g.id))
-  ).slice(0, 6);
+  const similar = similarMovies.slice(0, 6);
 
   const [views, setViews] = useState(movie.viewCount ?? 0);
   const fav = useSavedList("favorites");

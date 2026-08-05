@@ -17,9 +17,7 @@ import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/Se
 import EngagementPanel from "@/components/engagement/EngagementPanel";
 
 export default function SerialDetail({ serial, similarMovies = [] }: { serial: Movie; similarMovies?: Movie[] }) {
-  const similar = similarMovies.filter(
-    (m) => m.id !== serial.id && m.type === "SERIAL" && m.genres?.some((g) => serial.genres?.some((sg) => sg.id === g.id))
-  ).slice(0, 6);
+  const similar = similarMovies.slice(0, 6);
 
   const [views, setViews] = useState(serial.viewCount ?? 0);
   const fav = useSavedList("favorites");
