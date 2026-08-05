@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Play, Layers3, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Episode } from "@/types/movie";
 
-type Props = { slug: string; episodes: Episode[]; activeSeason?: number; activeEpisode?: number; title?: string; compact?: boolean };
+type Props = { slug: string; episodes: Episode[]; activeSeason?: number; activeEpisode?: number; title?: string; compact?: boolean; sidebar?: boolean };
 
 export function normalizeEpisodes(episodes: Episode[]): Episode[] {
   return [...episodes]
@@ -13,7 +14,7 @@ export function normalizeEpisodes(episodes: Episode[]): Episode[] {
     .sort((a, b) => a.season - b.season || a.episode - b.episode);
 }
 
-export default function SeasonEpisodeSelector({ slug, episodes, activeSeason, activeEpisode, title, compact = false }: Props) {
+export default function SeasonEpisodeSelector({ slug, episodes, activeSeason, activeEpisode, title, compact = false, sidebar = false }: Props) {
   const groups = useMemo(() => {
     const result = new Map<number, Episode[]>();
     for (const episode of normalizeEpisodes(episodes)) {
@@ -28,6 +29,8 @@ export default function SeasonEpisodeSelector({ slug, episodes, activeSeason, ac
   useEffect(() => { if (activeSeason && groups.some((group) => group.season === activeSeason)) setSelectedSeason(activeSeason); }, [activeSeason, groups]);
   if (!groups.length || !selectedSeason) return null;
   const current = groups.find((group) => group.season === selectedSeason) ?? groups[0];
+
+  if (sidebar) return <section className="rounded-2xl p-3 md:p-4" style={{ background: "linear-gradient(145deg, rgba(22,18,34,.96), rgba(10,11,19,.98))", border: "1px solid rgba(167,139,250,.28)", boxShadow: "0 16px 42px rgba(0,0,0,.24)" }} aria-label="Fasllar va qismlar"><div className="mb-3 flex items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-lg font-bold text-white"><Layers3 className="h-5 w-5 text-violet-300" />Fasllar va qismlar</h2><span className="text-xs text-violet-200">{current.episodes.length} qism</span></div><div className="mb-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{groups.map((group) => <button key={group.season} type="button" onClick={() => setSelectedSeason(group.season)} className="shrink-0 rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300" style={{ background: group.season === selectedSeason ? "rgba(124,58,237,.38)" : "rgba(255,255,255,.04)", border: group.season === selectedSeason ? "1px solid rgba(216,180,254,.8)" : "1px solid rgba(255,255,255,.1)", color: "white" }}><b>{group.season}-fasl</b></button>)}</div><div className="max-h-[500px] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(167,139,250,.6)_transparent]">{current.episodes.map((episode) => { const selected = episode.season === activeSeason && episode.episode === activeEpisode; return <Link key={episode.id} href={`/serial/${slug}/qism/${episode.season}/${episode.episode}`} aria-current={selected ? "page" : undefined} className="flex min-h-[84px] gap-2.5 rounded-xl p-2 transition-all hover:bg-white/[.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300" style={{ background: selected ? "linear-gradient(135deg, rgba(124,58,237,.34), rgba(46,16,101,.24))" : "rgba(255,255,255,.025)", border: selected ? "1px solid rgba(192,132,252,.92)" : "1px solid rgba(255,255,255,.09)", boxShadow: selected ? "0 0 18px rgba(139,92,246,.36)" : "none" }}><div className="relative h-[66px] w-[104px] shrink-0 overflow-hidden rounded-lg bg-black/35">{episode.previewUrl ? <Image src={episode.previewUrl} alt="" fill sizes="104px" className="object-cover" /> : <span className="flex h-full items-center justify-center"><Play className="h-5 w-5 text-violet-300" /></span>}</div><div className="min-w-0 flex-1 self-center"><p className="flex items-center gap-1.5 text-sm font-semibold text-white">{selected ? <Play className="h-3.5 w-3.5 fill-violet-300 text-violet-300" /> : null}{episode.episode}-qism</p>{episode.duration ? <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{episode.duration} daqiqa</p> : null}</div></Link>})}</div></section>;
 
   return (
     <section className={compact ? "mt-5" : "max-w-[1120px] mx-auto px-4 md:px-8 py-8"} aria-label="Fasllar va qismlar">

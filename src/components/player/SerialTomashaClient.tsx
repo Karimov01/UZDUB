@@ -28,6 +28,11 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   const nextEpisode = navigationIndex >= 0 ? navigableEpisodes[navigationIndex + 1] : undefined;
   const currentSeasonCount = eps.filter((episode) => episode.season === currentEp.season).length;
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
+  const normalizeTitle = (value?: string) => (value ?? "").toLowerCase().replace(/[’‘`']/g, "'").replace(/\s+/g, " ").trim();
+  const episodeName = normalizeTitle(currentEp.title);
+  const serialName = normalizeTitle(serial.title);
+  const isGenericEpisodeName = !episodeName || episodeName === serialName || episodeName === `${currentEp.episode}-qism` || episodeName.includes(`${currentEp.episode}-qism ${serialName}`);
+  const episodeHeading = `${serial.title} — ${currentEp.season}-fasl, ${currentEp.episode}-qism${isGenericEpisodeName ? "" : `: ${currentEp.title}`}`;
   const [episodeViews, setEpisodeViews] = useState(currentEp.viewCount ?? 0);
   const [showIndicator, setShowIndicator] = useState(true);
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
@@ -104,7 +109,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
       {/* Info + episodes */}
       <div className="w-full pb-2 pt-4 md:pt-5" style={{ color: "var(--text-primary)" }}>
         <h1 className="text-xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-display)" }}>
-          {serial.title} — {currentEp.episode}-qism{currentEp.title ? `: ${currentEp.title}` : ""}
+          {episodeHeading}
         </h1>
         {(serial.year || currentEp.duration) && (
           <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
@@ -119,7 +124,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
       </div>
       </div>
       <aside className="min-w-0 xl:sticky xl:top-5 xl:self-start" aria-label="Fasllar va qismlar">
-        <SeasonEpisodeSelector slug={serial.slug} episodes={eps.filter((episode) => Boolean(episode.videoUrl?.trim()))} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} />
+        <SeasonEpisodeSelector slug={serial.slug} episodes={eps.filter((episode) => Boolean(episode.videoUrl?.trim()))} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} sidebar />
       </aside>
       </main>
     </div>
