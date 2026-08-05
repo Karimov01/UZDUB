@@ -20,9 +20,12 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
       : [{ id: "1", movieId: serial.id, season: 1, episode: 1, title: "1-qism", videoUrl: serial.videoUrl, duration: serial.duration, viewCount: 0 }];
 
   const currentEp = eps.find((e) => e.episode === epNum && (initialSeason === undefined || e.season === initialSeason)) ?? eps[0];
-  const currentIndex = eps.findIndex((episode) => episode.id === currentEp.id);
-  const previousEpisode = currentIndex > 0 ? eps[currentIndex - 1] : undefined;
-  const nextEpisode = currentIndex >= 0 ? eps[currentIndex + 1] : undefined;
+  // Navigatsiyada faqat videosi mavjud, public serial qismlari qatnashadi.
+  // normalizeEpisodes fasl va qism bo'yicha tartibni saqlaydi.
+  const navigableEpisodes = eps.filter((episode) => Boolean(episode.videoUrl?.trim()));
+  const navigationIndex = navigableEpisodes.findIndex((episode) => episode.id === currentEp.id);
+  const previousEpisode = navigationIndex > 0 ? navigableEpisodes[navigationIndex - 1] : undefined;
+  const nextEpisode = navigationIndex >= 0 ? navigableEpisodes[navigationIndex + 1] : undefined;
   const currentSeasonCount = eps.filter((episode) => episode.season === currentEp.season).length;
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
   const [episodeViews, setEpisodeViews] = useState(currentEp.viewCount ?? 0);
@@ -79,8 +82,25 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
         </div>
       </div>
 
+      <nav className="mx-auto mt-3 flex w-full max-w-[1120px] gap-3 px-3 md:mt-4 md:px-0" aria-label="Qismlar navigatsiyasi">
+        <div className="flex-1">
+          {previousEpisode ? (
+            <Link href={`/serial/${serial.slug}/qism/${previousEpisode.season}/${previousEpisode.episode}`} className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:border-violet-300/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:w-auto" style={{ color: "#ddd6fe", border: "1px solid rgba(167,139,250,.3)", background: "rgba(124,58,237,.1)", boxShadow: "0 0 0 rgba(139,92,246,0)" }}><ChevronLeft className="h-4 w-4" />Oldingi qism</Link>
+          ) : (
+            <button type="button" disabled className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium opacity-40 md:w-auto" style={{ color: "#ddd6fe", border: "1px solid rgba(167,139,250,.2)", background: "rgba(124,58,237,.06)" }}><ChevronLeft className="h-4 w-4" />Oldingi qism</button>
+          )}
+        </div>
+        <div className="flex flex-1 justify-end">
+          {nextEpisode ? (
+            <Link href={`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`} className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(139,92,246,.42)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:w-auto" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)", border: "1px solid rgba(216,180,254,.72)" }}>Keyingi qism<ChevronRight className="h-4 w-4" /></Link>
+          ) : (
+            <button type="button" disabled className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-white opacity-40 md:w-auto" style={{ background: "rgba(124,58,237,.22)", border: "1px solid rgba(216,180,254,.3)" }}>Keyingi qism<ChevronRight className="h-4 w-4" /></button>
+          )}
+        </div>
+      </nav>
+
       {/* Info + episodes */}
-      <div className="max-w-4xl mx-auto w-full px-4 py-6" style={{ color: "var(--text-primary)" }}>
+      <div className="max-w-4xl mx-auto w-full px-4 pb-6 pt-4 md:pt-5" style={{ color: "var(--text-primary)" }}>
         <h1 className="text-xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-display)" }}>
           {serial.title} — {currentEp.episode}-qism{currentEp.title ? `: ${currentEp.title}` : ""}
         </h1>
@@ -94,10 +114,6 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <p className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{currentEp.description}</p>
         )}
 
-        <div className="mt-5 flex items-center justify-between gap-3">
-          {previousEpisode ? <Link href={`/serial/${serial.slug}/qism/${previousEpisode.season}/${previousEpisode.episode}`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium" style={{ color: "#ddd6fe", border: "1px solid rgba(167,139,250,.3)", background: "rgba(124,58,237,.1)" }}><ChevronLeft className="h-4 w-4" />Oldingi qism</Link> : <span />}
-          {nextEpisode ? <Link href={`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>Keyingi qism<ChevronRight className="h-4 w-4" /></Link> : null}
-        </div>
         <SeasonEpisodeSelector slug={serial.slug} episodes={eps} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} />
       </div>
     </div>
