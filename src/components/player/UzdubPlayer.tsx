@@ -99,7 +99,9 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
     let player: PlayerInstance | null = null;
     let cancelled = false;
     let video: HTMLVideoElement | null = null;
-    let lastSaved = 0;
+    // Birinchi progress 5-soniyada saqlanadi, keyingilari 15 soniya oralig'ida.
+    // Shu sabab foydalanuvchi qisqa tomosha qilib sahifadan chiqsa ham "Davom ettirish" paydo bo'ladi.
+    let lastSaved = -10;
     const progressUrl = movieId ? `/api/profile/progress?movieId=${encodeURIComponent(movieId)}${episodeId ? `&episodeId=${encodeURIComponent(episodeId)}` : ""}` : null;
     const resume = progressUrl ? fetch(progressUrl, { cache: "no-store" }).then((response) => response.ok ? response.json() : null).catch(() => null) : Promise.resolve(null);
     const save = (completed = false) => {
@@ -112,6 +114,7 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
     const onTimeUpdate = () => { if (video && video.currentTime - lastSaved >= 15) { lastSaved = video.currentTime; save(); } };
     const onPause = () => save();
     const onVideoEnded = () => { save(true); onEndedRef.current?.(); };
+    const onPageHide = () => save();
     const onMetadata = async () => {
       const data = await resume;
       const position = data?.progress?.positionSeconds;
@@ -135,6 +138,7 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
         video.addEventListener("timeupdate", onTimeUpdate);
         video.addEventListener("pause", onPause);
         video.addEventListener("ended", onVideoEnded);
+        window.addEventListener("pagehide", onPageHide);
       })
       .catch(() => {});
 
@@ -146,6 +150,7 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
         video.removeEventListener("timeupdate", onTimeUpdate);
         video.removeEventListener("pause", onPause);
         video.removeEventListener("ended", onVideoEnded);
+        window.removeEventListener("pagehide", onPageHide);
       }
       try {
         player?.destroy();
