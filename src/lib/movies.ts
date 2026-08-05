@@ -90,7 +90,20 @@ export interface LatestEpisode {
 }
 
 function episodeTimestamp(serial: Movie, episode: Episode): string {
-  return episode.createdAt ?? episode.updatedAt ?? episode.airDate ?? serial.updatedAt ?? serial.createdAt ?? "1970-01-01T00:00:00.000Z";
+  return episode.createdAt ?? episode.airDate ?? serial.createdAt ?? "1970-01-01T00:00:00.000Z";
+}
+
+function timestampValue(value: string): number {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+/** Qo'shilgan vaqt, fasl, qism va ID bo'yicha barqaror kamayish tartibi. */
+function compareLatestEpisodes(a: LatestEpisode, b: LatestEpisode): number {
+  return timestampValue(b.addedAt) - timestampValue(a.addedAt)
+    || b.episode.season - a.episode.season
+    || b.episode.episode - a.episode.episode
+    || b.episode.id.localeCompare(a.episode.id);
 }
 
 /** Faqat tomosha havolasi berilgan serial qismlarini yangi qo'shilganidan saralaydi. */
@@ -104,7 +117,7 @@ export function getLatestEpisodesFromMovies(movies: Movie[], limit = 24): Latest
         episode: { id: episode.id, season: episode.season, episode: episode.episode, title: episode.title, previewUrl: episode.previewUrl, duration: episode.duration, viewCount: episode.viewCount, createdAt: episode.createdAt, updatedAt: episode.updatedAt },
         addedAt: episodeTimestamp(serial, episode),
       })))
-    .sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt))
+    .sort(compareLatestEpisodes)
     .slice(0, limit);
 }
 
@@ -112,15 +125,24 @@ export async function getLatestEpisodes(limit = 24): Promise<LatestEpisode[]> {
   return getLatestEpisodesFromMovies(await getPublishedMovies(), limit);
 }
 
-/** Bosh sahifa bitta serial qismlari bilan to'lib qolmasligi uchun har serialdan ko'pi bilan 2 tasi olinadi. */
+/**
+ * Bosh sahifa uchun: avval har serialning eng yangi 2 qismi tanlanadi,
+ * keyin seriallar eng so'nggi qismi va ichidagi qismlar bo'yicha saralanadi.
+ */
 function getDiverseLatestEpisodes(movies: Movie[], limit: number): LatestEpisode[] {
-  const counts = new Map<string, number>();
-  return getLatestEpisodesFromMovies(movies, Math.max(limit * 4, 24)).filter((item) => {
-    const count = counts.get(item.serial.id) ?? 0;
-    if (count >= 2) return false;
-    counts.set(item.serial.id, count + 1);
-    return true;
-  }).slice(0, limit);
+  const episodesBySerial = new Map<string, LatestEpisode[]>();
+
+  for (const item of getLatestEpisodesFromMovies(movies, Number.MAX_SAFE_INTEGER)) {
+    const items = episodesBySerial.get(item.serial.id) ?? [];
+    items.push(item);
+    episodesBySerial.set(item.serial.id, items);
+  }
+
+  return [...episodesBySerial.values()]
+    .map((episodes) => episodes.sort(compareLatestEpisodes).slice(0, 2))
+    .sort((a, b) => compareLatestEpisodes(a[0], b[0]))
+    .flat()
+    .slice(0, limit);
 }
 
 /**

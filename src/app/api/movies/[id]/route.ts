@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 function revalidateAll(path?: string) {
-  for (const p of ["/", "/kino", "/serial", "/top", "/janr", ...(path ? [path] : [])]) {
+  for (const p of ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar", ...(path ? [path] : [])]) {
     revalidatePath(p);
   }
 }

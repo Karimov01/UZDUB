@@ -81,7 +81,7 @@ export async function POST(req: Request) {
   }
   // Ommaviy sahifalar keshini yangilash — yangi kino darhol ko'rinadi
   const path = movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
-  for (const p of ["/", "/kino", "/serial", "/top", "/janr", path]) {
+  for (const p of ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar", path]) {
     revalidatePath(p);
   }
   void notifyIndexNow([path, ...(movie.type === "SERIAL" ? (movie.episodes ?? []).map((episode) => `/serial/${movie.slug}/qism/${episode.season}/${episode.episode}`) : [])]);
