@@ -54,6 +54,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
 
       {/* Player yoki "video yo'q" */}
       <div className="w-full max-w-[1120px] mx-auto px-3 md:px-0 pt-5 md:pt-8">
+        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-violet-200"><span className="rounded-full px-2.5 py-1" style={{ background: "rgba(124,58,237,.2)", border: "1px solid rgba(196,132,252,.28)" }}>✦ SERIAL PLAYER</span><span style={{ color: "var(--text-muted)" }}>{currentEp.season}-fasl · {currentEp.episode}-qism</span></div>
         <div className="relative rounded-2xl md:rounded-3xl p-px" style={{ background: "linear-gradient(135deg, rgba(192,132,252,0.9), rgba(124,58,237,0.15) 42%, rgba(236,72,153,0.75))", boxShadow: "0 0 22px rgba(124,58,237,0.42), 0 0 65px rgba(139,92,246,0.18)" }}>
           <div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%, rgba(168,85,247,0.46), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,0.28), transparent 48%)" }} />
           <div className="relative overflow-hidden rounded-[15px] md:rounded-[23px] bg-black" onPointerDownCapture={() => setShowIndicator(false)}>

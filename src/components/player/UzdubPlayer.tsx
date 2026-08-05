@@ -111,7 +111,13 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
       if (!durationSeconds) return;
       void fetch("/api/profile/progress", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ movieId, episodeId, positionSeconds, durationSeconds, completed }) }).catch(() => {});
     };
-    const onTimeUpdate = () => { if (video && video.currentTime - lastSaved >= 15) { lastSaved = video.currentTime; save(); } };
+    const useVideoEvent = (event: Event): HTMLVideoElement | null => {
+      const target = event.target;
+      if (!(target instanceof HTMLVideoElement) || target.classList.contains("uzdub-ad-video")) return null;
+      video = target;
+      return target;
+    };
+    const onTimeUpdate = (event: Event) => { const target = useVideoEvent(event); if (target && target.currentTime - lastSaved >= 15) { lastSaved = target.currentTime; save(); } };
     const onPause = () => save();
     const onVideoEnded = () => { save(true); onEndedRef.current?.(); };
     const onPageHide = () => save();
@@ -134,24 +140,29 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
         player.load({ src, poster: poster ?? null });
         video = ref.current.querySelector("video");
         if (!video) return;
-        video.addEventListener("loadedmetadata", onMetadata);
-        video.addEventListener("timeupdate", onTimeUpdate);
-        video.addEventListener("pause", onPause);
-        video.addEventListener("ended", onVideoEnded);
-        window.addEventListener("pagehide", onPageHide);
       })
       .catch(() => {});
 
+    // UI player video elementini ichkarida almashtirishi mumkin. Capture fazasi
+    // yangi yaratilgan video eventlarini ham ishonchli ushlaydi.
+    const root = ref.current;
+    const onMetadataCapture = (event: Event) => { if (useVideoEvent(event)) void onMetadata(); };
+    const onPauseCapture = (event: Event) => { if (useVideoEvent(event)) onPause(); };
+    const onEndedCapture = (event: Event) => { if (useVideoEvent(event)) onVideoEnded(); };
+    root.addEventListener("loadedmetadata", onMetadataCapture, true);
+    root.addEventListener("timeupdate", onTimeUpdate, true);
+    root.addEventListener("pause", onPauseCapture, true);
+    root.addEventListener("ended", onEndedCapture, true);
+    window.addEventListener("pagehide", onPageHide);
+
     return () => {
       cancelled = true;
-      if (video) {
-        onPause();
-        video.removeEventListener("loadedmetadata", onMetadata);
-        video.removeEventListener("timeupdate", onTimeUpdate);
-        video.removeEventListener("pause", onPause);
-        video.removeEventListener("ended", onVideoEnded);
-        window.removeEventListener("pagehide", onPageHide);
-      }
+      if (video) onPause();
+      root.removeEventListener("loadedmetadata", onMetadataCapture, true);
+      root.removeEventListener("timeupdate", onTimeUpdate, true);
+      root.removeEventListener("pause", onPauseCapture, true);
+      root.removeEventListener("ended", onEndedCapture, true);
+      window.removeEventListener("pagehide", onPageHide);
       try {
         player?.destroy();
       } catch {
