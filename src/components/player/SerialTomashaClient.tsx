@@ -55,8 +55,10 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
         <span className="text-gray-400 text-sm">• {currentEp.episode}-qism{currentEp.title ? `: ${currentEp.title}` : ""}</span>
       </div>
 
+      <main className="mx-auto grid w-full max-w-[1400px] gap-5 px-3 pb-7 pt-5 md:px-5 md:pt-8 xl:grid-cols-[minmax(0,1fr)_350px]">
+      <div className="min-w-0">
       {/* Player yoki "video yo'q" */}
-      <div className="w-full max-w-[1120px] mx-auto px-3 md:px-0 pt-5 md:pt-8">
+      <div className="w-full pt-0">
         <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-violet-200"><span className="rounded-full px-2.5 py-1" style={{ background: "rgba(124,58,237,.2)", border: "1px solid rgba(196,132,252,.28)" }}>✦ SERIAL PLAYER</span><span style={{ color: "var(--text-muted)" }}>{currentEp.season}-fasl · {currentEp.episode}-qism</span></div>
         <div className="relative rounded-2xl md:rounded-3xl p-px" style={{ background: "linear-gradient(135deg, rgba(192,132,252,0.9), rgba(124,58,237,0.15) 42%, rgba(236,72,153,0.75))", boxShadow: "0 0 22px rgba(124,58,237,0.42), 0 0 65px rgba(139,92,246,0.18)" }}>
           <div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%, rgba(168,85,247,0.46), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,0.28), transparent 48%)" }} />
@@ -82,7 +84,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
         </div>
       </div>
 
-      <nav className="mx-auto mt-3 flex w-full max-w-[1120px] gap-3 px-3 md:mt-4 md:px-0" aria-label="Qismlar navigatsiyasi">
+      <nav className="mt-3 flex w-full gap-3 md:mt-4" aria-label="Qismlar navigatsiyasi">
         <div className="flex-1">
           {previousEpisode ? (
             <Link href={`/serial/${serial.slug}/qism/${previousEpisode.season}/${previousEpisode.episode}`} className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:border-violet-300/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:w-auto" style={{ color: "#ddd6fe", border: "1px solid rgba(167,139,250,.3)", background: "rgba(124,58,237,.1)", boxShadow: "0 0 0 rgba(139,92,246,0)" }}><ChevronLeft className="h-4 w-4" />Oldingi qism</Link>
@@ -100,7 +102,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
       </nav>
 
       {/* Info + episodes */}
-      <div className="max-w-4xl mx-auto w-full px-4 pb-6 pt-4 md:pt-5" style={{ color: "var(--text-primary)" }}>
+      <div className="w-full pb-2 pt-4 md:pt-5" style={{ color: "var(--text-primary)" }}>
         <h1 className="text-xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-display)" }}>
           {serial.title} — {currentEp.episode}-qism{currentEp.title ? `: ${currentEp.title}` : ""}
         </h1>
@@ -114,8 +116,12 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <p className="text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{currentEp.description}</p>
         )}
 
-        <SeasonEpisodeSelector slug={serial.slug} episodes={eps} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} />
       </div>
+      </div>
+      <aside className="min-w-0 xl:sticky xl:top-5 xl:self-start" aria-label="Fasllar va qismlar">
+        <SeasonEpisodeSelector slug={serial.slug} episodes={eps.filter((episode) => Boolean(episode.videoUrl?.trim()))} activeSeason={currentEp.season} activeEpisode={currentEp.episode} compact title={serial.title} />
+      </aside>
+      </main>
     </div>
   );
 }
