@@ -90,7 +90,7 @@ export const getHomePageData = cache(async (): Promise<HomePageData> => {
   const published = await getPublishedMovies();
   const mostViewed = [...published]
     .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
-    .slice(0, 12)
+    .slice(0, 10)
     .map(toCardData);
 
   return {
@@ -98,7 +98,7 @@ export const getHomePageData = cache(async (): Promise<HomePageData> => {
     featured: published.filter((m) => m.isFeatured).slice(0, 5).map(toHeroData),
     mostViewed,
     trending: published.filter((m) => m.isTrending).slice(0, 10).map(toCardData),
-    serials: published.filter((m) => m.type === "SERIAL").slice(0, 12).map(toCardData),
-    newest: published.slice(0, 12).map(toCardData),
+    serials: published.filter((m) => m.type === "SERIAL").slice(0, 10).map(toCardData),
+    newest: published.slice(0, 10).map(toCardData),
   };
 });

@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import JsonLd from "@/components/seo/JsonLd";
 import { Analytics } from "@vercel/analytics/next";
 import VisitorTracker from "@/components/analytics/VisitorTracker";
 import { APP_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_LOCALE } from "@/lib/constants";
+
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body-next", display: "swap" });
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-display-next", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -94,15 +98,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz" className="h-full">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="min-h-full antialiased flex flex-col">
         <JsonLd data={siteJsonLd} />
         <ConditionalLayout>{children}</ConditionalLayout>

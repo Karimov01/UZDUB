@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, Plus, Info, Star, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { optimizedTmdbImage } from "@/lib/images";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import type { HeroMovieData } from "@/types/movie";
@@ -49,7 +50,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
       <div key={current} className="absolute inset-0 animate-in fade-in duration-700">
           {movie.backdropUrl && !imgError[current] ? (
             <Image
-              src={movie.backdropUrl}
+              src={optimizedTmdbImage(movie.backdropUrl, "backdrop")!}
               alt={movie.title}
               fill
               priority={current === 0}

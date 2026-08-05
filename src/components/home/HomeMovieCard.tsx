@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Clock, Eye, Play, Star } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import { formatDuration, formatViewCount } from "@/lib/utils";
+import { optimizedTmdbImage } from "@/lib/images";
 import type { MovieCardData } from "@/types/movie";
 
 export default function HomeMovieCard({ movie, size = "md" }: { movie: MovieCardData; size?: "sm" | "md" | "lg" }) {
@@ -11,7 +12,7 @@ export default function HomeMovieCard({ movie, size = "md" }: { movie: MovieCard
     <Link href={href} className="group relative block shrink-0" style={{ width: size === "lg" ? "200px" : size === "sm" ? "130px" : "160px", scrollSnapAlign: "start" }}>
       <div className="relative aspect-[2/3] overflow-hidden rounded-xl" style={{ background: "var(--bg-tertiary)" }}>
         {movie.posterUrl ? (
-          <Image src={movie.posterUrl} alt={`${movie.title} posteri`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 640px) 130px, 160px" />
+          <Image src={optimizedTmdbImage(movie.posterUrl, "poster")!} alt={`${movie.title} posteri`} fill className="object-cover transition-transform duration-300 group-hover:scale-105" sizes="(max-width: 640px) 130px, 160px" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center"><Play className="h-10 w-10 text-gray-600" /></div>
         )}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, Eye, Flame } from "lucide-react";
 import { formatViewCount } from "@/lib/utils";
+import { optimizedTmdbImage } from "@/lib/images";
 import type { MovieCardData } from "@/types/movie";
 
 interface TrendingSectionProps {
@@ -53,7 +54,7 @@ export default function TrendingSection({ movies }: TrendingSectionProps) {
                 >
                   {movie.posterUrl && (
                     <Image
-                      src={movie.posterUrl}
+                      src={optimizedTmdbImage(movie.posterUrl, "poster")!}
                       alt={movie.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
