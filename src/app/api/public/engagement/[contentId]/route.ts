@@ -9,5 +9,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ cont
   const sort = new URL(request.url).searchParams.get("sort") === "top" ? "top" : "latest";
   const offset = Math.max(0, Number(new URL(request.url).searchParams.get("offset") ?? 0));
   const data = await getEngagement(contentId, voterId, sort, offset);
-  return NextResponse.json({ ...data, canComment: Boolean(session?.user?.id) }, { headers: { "cache-control": "no-store" } });
+  const isAuthenticated = Boolean(session?.user?.id && session.user.id !== "admin");
+  return NextResponse.json({ ...data, canComment: true, canVote: isAuthenticated, isAuthenticated }, { headers: { "cache-control": "no-store" } });
 }

@@ -39,6 +39,8 @@ type Data = {
   totalComments: number;
   totalTopLevel: number;
   canComment: boolean;
+  canVote: boolean;
+  isAuthenticated: boolean;
 };
 const card = {
   background: "linear-gradient(145deg,rgba(18,19,31,.92),rgba(10,11,20,.94))",
@@ -66,6 +68,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
     [expanded, setExpanded] = useState(false),
     [loadingAll, setLoadingAll] = useState(false),
     [text, setText] = useState(""),
+    [guestName, setGuestName] = useState(""),
     [replyTo, setReplyTo] = useState<Comment | null>(null),
     [hover, setHover] = useState(0),
     [toast, setToast] = useState(""),
@@ -113,7 +116,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
     reaction?: "LIKE" | "DISLIKE";
   }) => {
     if (isVoting) return;
-    if (!data?.canComment) return setError("Baho berish uchun avval tizimga kiring.");
+    if (!data?.canVote) return setError("Baho berish uchun avval tizimga kiring.");
     if (body.score && data.rating.myScore) return setError("Sizning bahoyingiz saqlangan va o'zgarmaydi.");
     if (body.reaction && data.reaction.myReaction) return setError("Sizning munosabatingiz saqlangan va o'zgarmaydi.");
     setIsVoting(true);
@@ -134,14 +137,19 @@ export default function EngagementPanel({ content }: { content: Movie }) {
       setIsVoting(false);
     }
   };
-  const sendComment = async (reply = false, replyBody = "") => {
+  const sendComment = async (reply = false, replyBody = "", replyName = "") => {
     const body = reply ? replyBody : text;
+    const name = reply ? replyName : guestName;
+    if (!data?.isAuthenticated && name.trim().length < 2) return setError("Izoh qoldirish uchun ismingizni kiriting.");
+    setError("");
     const r = await fetch(`/api/public/engagement/${content.id}/comments`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         text: body,
+        name,
         parentId: reply ? replyTo?.id : undefined,
+        website: "",
       }),
     });
     const json = await r.json();
@@ -208,6 +216,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
   );
   const ReplyInput = ({ target }: { target: Comment }) => {
     const [draft, setDraft] = useState("");
+    const [name, setName] = useState(guestName);
     return (
       <div
         className="mt-3 ml-1 sm:ml-7 rounded-xl p-3"
@@ -232,6 +241,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
             <X className="h-4 w-4" />
           </button>
         </div>
+        {!data?.isAuthenticated && <input value={name} onChange={(event) => setName(event.currentTarget.value)} maxLength={40} placeholder="Ismingiz" className="mb-2 w-full rounded-lg px-2.5 py-2 text-sm text-white outline-none" style={{ background: "rgba(0,0,0,.24)", border: "1px solid var(--border)" }} />}
         <div className="flex gap-2">
           <textarea
             autoFocus
@@ -251,8 +261,8 @@ export default function EngagementPanel({ content }: { content: Movie }) {
             }}
           />
           <button
-            onClick={() => void sendComment(true, draft)}
-            disabled={draft.trim().length < 2}
+            onClick={() => void sendComment(true, draft, name)}
+            disabled={draft.trim().length < 2 || (!data?.isAuthenticated && name.trim().length < 2)}
             className="self-end p-3 rounded-lg text-white disabled:opacity-40"
             style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
           >
@@ -291,6 +301,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
                 ADMIN
               </span>
             )}
+            {comment.author.role === "GUEST" && <span className="text-[10px] px-1.5 py-0.5 rounded text-violet-200" style={{ background: "rgba(124,58,237,.18)" }}>MEHMON</span>}
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
               • {ago(comment.createdAt)}
             </span>
@@ -385,7 +396,10 @@ export default function EngagementPanel({ content }: { content: Movie }) {
             </div>
           </div>
           {data?.canComment ? (
-            <div className="mb-5 flex gap-2">
+            <div className="mb-5">
+              {!data?.isAuthenticated && <input value={guestName} onChange={(event) => setGuestName(event.currentTarget.value)} maxLength={40} placeholder="Ismingiz" className="mb-2 w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none" style={{ background: "rgba(0,0,0,.22)", border: "1px solid var(--border)" }} />}
+              <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+              <div className="flex gap-2">
               <textarea
                 dir="ltr"
                 value={text}
@@ -404,7 +418,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
               />
               <button
                 onClick={() => void sendComment()}
-                disabled={text.trim().length < 2}
+                disabled={text.trim().length < 2 || (!data?.isAuthenticated && guestName.trim().length < 2)}
                 className="self-end p-3 rounded-xl text-white disabled:opacity-40"
                 style={{
                   background: "linear-gradient(135deg,#7c3aed,#db2777)",
@@ -412,6 +426,7 @@ export default function EngagementPanel({ content }: { content: Movie }) {
               >
                 <Send className="h-4 w-4" />
               </button>
+              </div>
             </div>
           ) : (
             <div

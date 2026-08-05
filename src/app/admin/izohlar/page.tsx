@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Eye, MessageCircle, Search, ShieldAlert, Trash2 } from "lucide-react";
 
-type Comment = { id: string; body: string; createdAt: string; firstName: string; telegramUsername?: string; role: string; likes: number; contentTitle?: string; status: "PENDING" | "APPROVED" | "SPAM" };
+type Comment = { id: string; body: string; createdAt: string; firstName: string; telegramUsername?: string; role: string; isGuest?: boolean; likes: number; contentTitle?: string; status: "PENDING" | "APPROVED" | "SPAM" };
 type Stats = { total: number; approved: number; pending: number; spam: number };
 const empty: Stats = { total: 0, approved: 0, pending: 0, spam: 0 };
 

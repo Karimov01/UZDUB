@@ -20,6 +20,9 @@ async function ensureEngagementTables() {
         sql`CREATE INDEX IF NOT EXISTS comments_content_created_idx ON comments (content_id, created_at DESC)`,
         sql`CREATE INDEX IF NOT EXISTS comment_likes_comment_idx ON comment_likes (comment_id)`,
       ]);
+      await sql`ALTER TABLE comments ALTER COLUMN user_id DROP NOT NULL`;
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS guest_name TEXT`;
+      await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS guest_hash TEXT`;
       await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'APPROVED'`;
       await sql`ALTER TABLE comments ALTER COLUMN status SET DEFAULT 'APPROVED'`;
     })();
@@ -27,7 +30,7 @@ async function ensureEngagementTables() {
   return ready;
 }
 
-type EngagementCommentRow = { id: string; body: string; parentId?: string; createdAt: string; authorId: string; firstName?: string; lastName?: string; telegramPhotoUrl?: string; role: string; likes: number; likedByMe: boolean };
+type EngagementCommentRow = { id: string; body: string; parentId?: string; createdAt: string; authorId: string; firstName?: string; lastName?: string; guestName?: string; telegramPhotoUrl?: string; role: string; likes: number; likedByMe: boolean };
 export type EngagementComment = { id: string; text: string; parentComment?: string; createdAt: string; likesCount: number; likedByMe: boolean; author: { id: string; displayName: string; avatar?: string; role: string } };
 
 function displayName(firstName?: string, lastName?: string) {
@@ -35,7 +38,8 @@ function displayName(firstName?: string, lastName?: string) {
 }
 
 function publicComment(row: EngagementCommentRow): EngagementComment {
-  return { id: row.id, text: row.body, parentComment: row.parentId, createdAt: row.createdAt, likesCount: row.likes, likedByMe: row.likedByMe, author: { id: row.authorId, displayName: displayName(row.firstName, row.lastName), avatar: row.telegramPhotoUrl, role: row.role } };
+  const guestName = row.guestName?.replace(/\s+/g, " ").trim();
+  return { id: row.id, text: row.body, parentComment: row.parentId, createdAt: row.createdAt, likesCount: row.likes, likedByMe: row.likedByMe, author: { id: row.authorId, displayName: guestName || displayName(row.firstName, row.lastName), avatar: row.telegramPhotoUrl, role: row.role } };
 }
 
 export async function getEngagement(contentId: string, voterId?: string, sort: "latest" | "top" = "latest", offset = 0) {
@@ -43,8 +47,8 @@ export async function getEngagement(contentId: string, voterId?: string, sort: "
   const ratings = await sql`SELECT COALESCE(AVG(score), 0)::float AS average, COUNT(*)::int AS count, COALESCE(MAX(score) FILTER (WHERE voter_id = ${voterId ?? ""}), 0)::int AS "myScore" FROM content_ratings WHERE content_id = ${contentId} AND voter_id LIKE 'user:%'` as unknown as { average: number; count: number; myScore: number }[];
   const reactions = await sql`SELECT COUNT(*) FILTER (WHERE reaction = 'LIKE')::int AS likes, COUNT(*) FILTER (WHERE reaction = 'DISLIKE')::int AS dislikes, COALESCE(MAX(reaction) FILTER (WHERE voter_id = ${voterId ?? ""}), '') AS "myReaction" FROM content_reactions WHERE content_id = ${contentId} AND voter_id LIKE 'user:%'` as unknown as { likes: number; dislikes: number; myReaction: "LIKE" | "DISLIKE" | "" }[];
   const rows = sort === "top"
-    ? await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", u.id AS "authorId", u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COUNT(cl.comment_id)::int AS likes, BOOL_OR(cl.user_id = ${voterId ?? ""}) AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.content_id = ${contentId} AND c.status = 'APPROVED' GROUP BY c.id, u.id ORDER BY (c.parent_id IS NOT NULL), COUNT(cl.comment_id) DESC, c.created_at DESC LIMIT 10 OFFSET ${offset}` as unknown as EngagementCommentRow[]
-    : await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", u.id AS "authorId", u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COUNT(cl.comment_id)::int AS likes, BOOL_OR(cl.user_id = ${voterId ?? ""}) AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.content_id = ${contentId} AND c.status = 'APPROVED' GROUP BY c.id, u.id ORDER BY (c.parent_id IS NOT NULL), c.created_at DESC LIMIT 10 OFFSET ${offset}` as unknown as EngagementCommentRow[];
+    ? await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", COALESCE(u.id, CONCAT('guest:', c.id)) AS "authorId", u.first_name AS "firstName", u.last_name AS "lastName", c.guest_name AS "guestName", u.telegram_photo_url AS "telegramPhotoUrl", COALESCE(u.role, 'GUEST') AS role, COUNT(cl.comment_id)::int AS likes, BOOL_OR(cl.user_id = ${voterId ?? ""}) AS "likedByMe" FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.content_id = ${contentId} AND c.status = 'APPROVED' GROUP BY c.id, u.id, c.guest_name ORDER BY (c.parent_id IS NOT NULL), COUNT(cl.comment_id) DESC, c.created_at DESC LIMIT 10 OFFSET ${offset}` as unknown as EngagementCommentRow[]
+    : await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", COALESCE(u.id, CONCAT('guest:', c.id)) AS "authorId", u.first_name AS "firstName", u.last_name AS "lastName", c.guest_name AS "guestName", u.telegram_photo_url AS "telegramPhotoUrl", COALESCE(u.role, 'GUEST') AS role, COUNT(cl.comment_id)::int AS likes, BOOL_OR(cl.user_id = ${voterId ?? ""}) AS "likedByMe" FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.content_id = ${contentId} AND c.status = 'APPROVED' GROUP BY c.id, u.id, c.guest_name ORDER BY (c.parent_id IS NOT NULL), c.created_at DESC LIMIT 10 OFFSET ${offset}` as unknown as EngagementCommentRow[];
   const totals = await sql`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE parent_id IS NULL)::int AS "topLevel" FROM comments WHERE content_id = ${contentId} AND status = 'APPROVED'` as unknown as { total: number; topLevel: number }[];
   return { rating: ratings[0] ?? { average: 0, count: 0, myScore: 0 }, reaction: reactions[0] ?? { likes: 0, dislikes: 0, myReaction: "" }, comments: rows.map(publicComment), totalComments: totals[0]?.total ?? 0, totalTopLevel: totals[0]?.topLevel ?? 0 };
 }
@@ -61,9 +65,15 @@ export async function saveReaction(contentId: string, voterId: string, reaction:
   return inserted.length > 0;
 }
 
-export async function createComment(id: string, contentId: string, userId: string, body: string, parentId?: string) {
+export async function createComment(id: string, contentId: string, userId: string | undefined, body: string, parentId?: string, guest?: { name: string; hash: string }) {
   await ensureEngagementTables(); const sql = db();
-  await sql`INSERT INTO comments (id, content_id, user_id, parent_id, body) VALUES (${id}, ${contentId}, ${userId}, ${parentId ?? null}, ${body})`;
+  await sql`INSERT INTO comments (id, content_id, user_id, parent_id, body, guest_name, guest_hash) VALUES (${id}, ${contentId}, ${userId ?? null}, ${parentId ?? null}, ${body}, ${guest?.name ?? null}, ${guest?.hash ?? null})`;
+}
+
+export async function commentExistsInContent(commentId: string, contentId: string) {
+  await ensureEngagementTables(); const sql = db();
+  const rows = await sql`SELECT 1 FROM comments WHERE id = ${commentId} AND content_id = ${contentId} AND status = 'APPROVED' LIMIT 1` as unknown[];
+  return rows.length > 0;
 }
 
 export async function toggleCommentLike(commentId: string, userId: string) {
@@ -74,10 +84,10 @@ export async function toggleCommentLike(commentId: string, userId: string) {
   return false;
 }
 
-export type AdminComment = { id: string; body: string; parentId?: string; createdAt: string; firstName: string; lastName?: string; telegramUsername?: string; telegramPhotoUrl?: string; role: string; likes: number; likedByMe: boolean; contentTitle?: string; status: "PENDING" | "APPROVED" | "SPAM" };
+export type AdminComment = { id: string; body: string; parentId?: string; createdAt: string; firstName: string; lastName?: string; telegramUsername?: string; telegramPhotoUrl?: string; role: string; isGuest: boolean; likes: number; likedByMe: boolean; contentTitle?: string; status: "PENDING" | "APPROVED" | "SPAM" };
 export async function getAdminComments(query: string, status: string, page: number) {
   await ensureEngagementTables(); const sql = db(); const offset = (page - 1) * 20; const term = `%${query}%`;
-  const rows = await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", c.status, u.first_name AS "firstName", u.last_name AS "lastName", u.telegram_username AS "telegramUsername", u.telegram_photo_url AS "telegramPhotoUrl", u.role, COALESCE(m.data->>'title', 'Kontent topilmadi') AS "contentTitle", COUNT(cl.comment_id)::int AS likes, false AS "likedByMe" FROM comments c JOIN users u ON u.id = c.user_id LEFT JOIN movies m ON m.id = c.content_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.status <> 'DELETED' AND (${status} = 'ALL' OR c.status = ${status}) AND (${query} = '' OR c.body ILIKE ${term} OR COALESCE(u.telegram_username, '') ILIKE ${term}) GROUP BY c.id, u.id, m.data ORDER BY c.created_at DESC LIMIT 20 OFFSET ${offset}` as unknown as AdminComment[];
+  const rows = await sql`SELECT c.id, c.body, c.parent_id AS "parentId", c.created_at AS "createdAt", c.status, COALESCE(u.first_name, c.guest_name, 'Foydalanuvchi') AS "firstName", u.last_name AS "lastName", u.telegram_username AS "telegramUsername", u.telegram_photo_url AS "telegramPhotoUrl", COALESCE(u.role, 'GUEST') AS role, (c.user_id IS NULL) AS "isGuest", COALESCE(m.data->>'title', 'Kontent topilmadi') AS "contentTitle", COUNT(cl.comment_id)::int AS likes, false AS "likedByMe" FROM comments c LEFT JOIN users u ON u.id = c.user_id LEFT JOIN movies m ON m.id = c.content_id LEFT JOIN comment_likes cl ON cl.comment_id = c.id WHERE c.status <> 'DELETED' AND (${status} = 'ALL' OR c.status = ${status}) AND (${query} = '' OR c.body ILIKE ${term} OR COALESCE(u.telegram_username, '') ILIKE ${term} OR COALESCE(c.guest_name, '') ILIKE ${term}) GROUP BY c.id, u.id, c.guest_name, m.data ORDER BY c.created_at DESC LIMIT 20 OFFSET ${offset}` as unknown as AdminComment[];
   const counts = await sql`SELECT COUNT(*) FILTER (WHERE status <> 'DELETED')::int AS total, COUNT(*) FILTER (WHERE status = 'APPROVED')::int AS approved, COUNT(*) FILTER (WHERE status = 'PENDING')::int AS pending, COUNT(*) FILTER (WHERE status = 'SPAM')::int AS spam FROM comments` as unknown as { total:number; approved:number; pending:number; spam:number }[];
   return { comments: rows, stats: counts[0] ?? { total:0, approved:0, pending:0, spam:0 } };
 }
