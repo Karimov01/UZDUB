@@ -2,7 +2,11 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/constants";
 import { getPublishedMovies } from "@/lib/movies";
 
-export const revalidate = 300;
+// Sitemap nashr qilingan kontent bilan har doim birga yangilanishi kerak.
+// Statik build vaqtida hosil qilinganda Neon bazasiga keyin qo'shilgan kinolar
+// XML ro'yxatiga kirmay qolardi.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const movies = await getPublishedMovies();
