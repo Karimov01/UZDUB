@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { Episode, Movie } from "@/types/movie";
 import { SITE_URL, APP_NAME, SITE_LOCALE } from "@/lib/constants";
+import { buildVideoObject, episodePath, getEpisodeVideoData, getMovieVideoData, movieWatchPath } from "@/lib/video-seo";
 
 /** Kino yoki serial sahifasi uchun to'liq metadata (OG, Twitter, canonical). */
 export function buildMovieMetadata(movie: Movie): Metadata {
@@ -49,7 +50,7 @@ export function createAutomaticSeo(movie: Pick<Movie, "title" | "year" | "type" 
 
 /** Serial qismi uchun Telegram, Google va Yandex ulashuv metadata-si. */
 export function buildEpisodeMetadata(serial: Movie, episode: Episode): Metadata {
-  const path = `/serial/${serial.slug}/qism/${episode.season}/${episode.episode}`;
+  const path = episodePath(serial, episode);
   const url = `${SITE_URL}${path}`;
   const label = episode.season === 1 ? `${episode.episode}-Qism` : `${episode.season}-Fasl ${episode.episode}-Qism`;
   const title = `${serial.title} ${label} O'zbek tilida`;
@@ -62,12 +63,30 @@ export function buildEpisodeMetadata(serial: Movie, episode: Episode): Metadata 
     alternates: { canonical: path },
     openGraph: { type: "video.episode", locale: SITE_LOCALE, url, siteName: APP_NAME, title, description, images },
     twitter: { card: "summary_large_image", title, description, images: images?.map((image) => image.url) },
+    robots: { index: Boolean(getEpisodeVideoData(serial, episode)), follow: true },
+  };
+}
+
+/** Kino tomosha sahifasi uchun alohida canonical metadata. */
+export function buildWatchMetadata(movie: Movie): Metadata {
+  const path = movieWatchPath(movie);
+  const title = `${movie.title} O'zbek tilida tomosha qilish`;
+  const description = `${movie.title}${movie.year ? ` (${movie.year})` : ""} filmini O'zbek tilida HD sifatda onlayn tomosha qiling.`;
+  const image = movie.backdropUrl || movie.posterUrl;
+  return {
+    title: { absolute: `${title} | ${APP_NAME}` },
+    description,
+    alternates: { canonical: path },
+    robots: { index: Boolean(movie.videoUrl), follow: true },
+    openGraph: { type: "video.other", locale: SITE_LOCALE, url: `${SITE_URL}${path}`, siteName: APP_NAME, title, description, images: image ? [{ url: image }] : undefined },
+    twitter: { card: "summary_large_image", title, description, images: image ? [image] : undefined },
   };
 }
 
 /** Serial qismi uchun schema.org TVEpisode tuzilmasi. */
 export function buildEpisodeJsonLd(serial: Movie, episode: Episode): Record<string, unknown> {
-  const path = `/serial/${serial.slug}/qism/${episode.season}/${episode.episode}`;
+  const path = episodePath(serial, episode);
+  const video = getEpisodeVideoData(serial, episode);
   return {
     "@context": "https://schema.org",
     "@type": "TVEpisode",
@@ -79,6 +98,18 @@ export function buildEpisodeJsonLd(serial: Movie, episode: Episode): Record<stri
     partOfSeries: { "@type": "TVSeries", name: serial.title, url: `${SITE_URL}/serial/${serial.slug}` },
     image: serial.posterUrl || serial.backdropUrl,
     inLanguage: "uz",
+    ...(video ? { video: buildVideoObject(video) } : {}),
+  };
+}
+
+/** Kino tomosha sahifasidagi Movie + VideoObject bog'lanishi. */
+export function buildWatchJsonLd(movie: Movie): Record<string, unknown> | undefined {
+  const video = getMovieVideoData(movie);
+  if (!video) return undefined;
+  return {
+    ...buildMovieJsonLd(movie),
+    url: `${SITE_URL}${movieWatchPath(movie)}`,
+    video: buildVideoObject(video),
   };
 }
 

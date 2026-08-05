@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/constants";
 import { getPublishedMovies } from "@/lib/movies";
+import { episodePath, getEpisodeVideoData, getMovieVideoData, movieWatchPath } from "@/lib/video-seo";
 
 // Sitemap nashr qilingan kontent bilan har doim birga yangilanishi kerak.
 // Statik build vaqtida hosil qilinganda Neon bazasiga keyin qo'shilgan kinolar
@@ -10,15 +11,20 @@ export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const movies = await getPublishedMovies();
-  const lastModified = (movie: (typeof movies)[number]) => new Date(movie.publishedAt ?? movie.createdAt ?? `${movie.year ?? 2025}-01-01`);
+  const lastModified = (movie: (typeof movies)[number]) => {
+    const value = movie.updatedAt ?? movie.publishedAt ?? movie.createdAt;
+    if (!value) return undefined;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  };
 
   // Statik sahifalar
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`, lastModified: new Date("2025-01-01"), changeFrequency: "daily", priority: 1 },
-    { url: `${SITE_URL}/kino`, lastModified: new Date("2025-01-01"), changeFrequency: "daily", priority: 0.9 },
-    { url: `${SITE_URL}/serial`, lastModified: new Date("2025-01-01"), changeFrequency: "daily", priority: 0.9 },
-    { url: `${SITE_URL}/top`, lastModified: new Date("2025-01-01"), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${SITE_URL}/janr`, lastModified: new Date("2025-01-01"), changeFrequency: "weekly", priority: 0.7 },
+    { url: `${SITE_URL}/`, changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/kino`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/serial`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/top`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${SITE_URL}/janr`, changeFrequency: "weekly", priority: 0.7 },
   ];
 
   // Janr sahifalari (kontentdan noyob slug'lar)
@@ -27,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
   const genreRoutes: MetadataRoute.Sitemap = genreSlugs.map((slug) => ({
     url: `${SITE_URL}/janr/${slug}`,
-    lastModified: movies.filter((movie) => movie.genres?.some((genre) => genre.slug === slug)).map(lastModified).sort((a,b)=>b.getTime()-a.getTime())[0],
+    lastModified: movies.filter((movie) => movie.genres?.some((genre) => genre.slug === slug)).map(lastModified).filter((date): date is Date => Boolean(date)).sort((a,b)=>b.getTime()-a.getTime())[0],
     changeFrequency: "weekly",
     priority: 0.6,
   }));
@@ -40,17 +46,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // Har bir serial qismi ham mustaqil SEO manziliga ega.
-  const episodeRoutes: MetadataRoute.Sitemap = movies.flatMap((serial) =>
-    serial.type === "SERIAL"
-      ? (serial.episodes ?? []).map((episode) => ({
-          url: `${SITE_URL}/serial/${serial.slug}/qism/${episode.season}/${episode.episode}`,
-        lastModified: new Date(episode.airDate ?? serial.publishedAt ?? serial.createdAt ?? `${serial.year ?? 2025}-01-01`),
-          changeFrequency: "weekly" as const,
-          priority: 0.7,
-        }))
+  const watchRoutes: MetadataRoute.Sitemap = movies.flatMap((movie) =>
+    movie.type !== "SERIAL" && getMovieVideoData(movie)
+      ? [{ url: `${SITE_URL}${movieWatchPath(movie)}`, lastModified: lastModified(movie), changeFrequency: "weekly" as const, priority: 0.7 }]
       : []
   );
 
-  return [...staticRoutes, ...genreRoutes, ...contentRoutes, ...episodeRoutes];
+  // Har bir serial qismi ham mustaqil SEO manziliga ega.
+  const episodeRoutes: MetadataRoute.Sitemap = movies.flatMap((serial) =>
+    serial.type === "SERIAL"
+      ? (serial.episodes ?? []).flatMap((episode) => getEpisodeVideoData(serial, episode) ? [{
+          url: `${SITE_URL}${episodePath(serial, episode)}`,
+          lastModified: episode.airDate ? new Date(episode.airDate) : lastModified(serial),
+          changeFrequency: "weekly" as const,
+          priority: 0.7,
+        }] : [])
+      : []
+  );
+
+  return [...staticRoutes, ...genreRoutes, ...contentRoutes, ...watchRoutes, ...episodeRoutes];
 }

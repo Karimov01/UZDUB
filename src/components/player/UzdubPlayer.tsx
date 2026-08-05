@@ -116,5 +116,19 @@ export default function UzdubPlayer({ src, poster }: { src?: string; poster?: st
     };
   }, [src, poster]);
 
-  return <div ref={ref} style={{ width: "100%" }} />;
+  const directSource = src && /\.(m3u8|mp4|webm|mov)(?:$|[?#])/i.test(src) ? src : undefined;
+  return (
+    <div ref={ref} style={{ width: "100%", aspectRatio: "16 / 9" }} role="region" aria-label="Video player">
+      <video
+        className="uzdub-seo-video"
+        controls
+        playsInline
+        preload="metadata"
+        poster={poster ?? undefined}
+        src={directSource}
+        style={{ width: "100%", height: "100%", display: "block", background: "#000" }}
+        aria-label="Videoni tomosha qilish"
+      />
+    </div>
+  );
 }
