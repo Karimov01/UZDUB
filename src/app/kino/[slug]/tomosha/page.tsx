@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getMovieBySlug } from "@/lib/movies";
+import { getAllMovies, getMovieBySlug } from "@/lib/movies";
+import { getRecommendations } from "@/lib/recommendations";
 import TomashaClient from "@/components/player/TomashaClient";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildWatchJsonLd, buildWatchMetadata } from "@/lib/seo";
@@ -19,5 +20,9 @@ export default async function TomashaPage({ params }: { params: Promise<{ slug: 
   const movie = await getMovieBySlug(slug);
   if (!movie) notFound();
   const schema = buildWatchJsonLd(movie);
-  return <>{schema && <JsonLd data={schema} />}<TomashaClient movie={movie} /></>;
+  const recommendations = getRecommendations(movie, await getAllMovies())
+    .map((item) => item.movie)
+    .filter((item) => item.id !== movie.id && item.type === "MOVIE" && Boolean(item.videoUrl?.trim()))
+    .slice(0, 6);
+  return <>{schema && <JsonLd data={schema} />}<TomashaClient movie={movie} recommendations={recommendations} /></>;
 }
