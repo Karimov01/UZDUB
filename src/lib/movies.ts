@@ -84,8 +84,8 @@ export interface HomePageData {
 }
 
 export interface LatestEpisode {
-  serial: MovieCardData;
-  episode: Pick<Episode, "id" | "season" | "episode" | "title" | "duration" | "viewCount" | "createdAt" | "updatedAt">;
+  serial: MovieCardData & Pick<Movie, "backdropUrl">;
+  episode: Pick<Episode, "id" | "season" | "episode" | "title" | "previewUrl" | "duration" | "viewCount" | "createdAt" | "updatedAt">;
   addedAt: string;
 }
 
@@ -100,8 +100,8 @@ export function getLatestEpisodesFromMovies(movies: Movie[], limit = 24): Latest
     .flatMap((serial) => (serial.episodes ?? [])
       .filter((episode) => Boolean(episode.videoUrl?.trim()))
       .map((episode) => ({
-        serial: toCardData(serial),
-        episode: { id: episode.id, season: episode.season, episode: episode.episode, title: episode.title, duration: episode.duration, viewCount: episode.viewCount, createdAt: episode.createdAt, updatedAt: episode.updatedAt },
+        serial: { ...toCardData(serial), backdropUrl: serial.backdropUrl },
+        episode: { id: episode.id, season: episode.season, episode: episode.episode, title: episode.title, previewUrl: episode.previewUrl, duration: episode.duration, viewCount: episode.viewCount, createdAt: episode.createdAt, updatedAt: episode.updatedAt },
         addedAt: episodeTimestamp(serial, episode),
       })))
     .sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt))
@@ -110,6 +110,17 @@ export function getLatestEpisodesFromMovies(movies: Movie[], limit = 24): Latest
 
 export async function getLatestEpisodes(limit = 24): Promise<LatestEpisode[]> {
   return getLatestEpisodesFromMovies(await getPublishedMovies(), limit);
+}
+
+/** Bosh sahifa bitta serial qismlari bilan to'lib qolmasligi uchun har serialdan ko'pi bilan 2 tasi olinadi. */
+function getDiverseLatestEpisodes(movies: Movie[], limit: number): LatestEpisode[] {
+  const counts = new Map<string, number>();
+  return getLatestEpisodesFromMovies(movies, Math.max(limit * 4, 24)).filter((item) => {
+    const count = counts.get(item.serial.id) ?? 0;
+    if (count >= 2) return false;
+    counts.set(item.serial.id, count + 1);
+    return true;
+  }).slice(0, limit);
 }
 
 /**
@@ -130,6 +141,6 @@ export const getHomePageData = cache(async (): Promise<HomePageData> => {
     trending: published.filter((m) => m.isTrending).slice(0, 10).map(toCardData),
     serials: published.filter((m) => m.type === "SERIAL").slice(0, 10).map(toCardData),
     newest: published.slice(0, 10).map(toCardData),
-    latestEpisodes: getLatestEpisodesFromMovies(published, 10),
+    latestEpisodes: getDiverseLatestEpisodes(published, 10),
   };
 });
