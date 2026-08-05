@@ -93,7 +93,10 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
   const ref = useRef<HTMLDivElement>(null);
   const onEndedRef = useRef(onEnded);
   const embedSavedRef = useRef(false);
-  onEndedRef.current = onEnded;
+
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
 
   useEffect(() => {
     if (!src || !ref.current) return;
@@ -112,13 +115,13 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
       if (!durationSeconds) return;
       void fetch("/api/profile/progress", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ movieId, episodeId, positionSeconds, durationSeconds, completed }) }).catch(() => {});
     };
-    const useVideoEvent = (event: Event): HTMLVideoElement | null => {
+    const getVideoFromEvent = (event: Event): HTMLVideoElement | null => {
       const target = event.target;
       if (!(target instanceof HTMLVideoElement) || target.classList.contains("uzdub-ad-video")) return null;
       video = target;
       return target;
     };
-    const onTimeUpdate = (event: Event) => { const target = useVideoEvent(event); if (target && target.currentTime - lastSaved >= 15) { lastSaved = target.currentTime; save(); } };
+    const onTimeUpdate = (event: Event) => { const target = getVideoFromEvent(event); if (target && target.currentTime - lastSaved >= 15) { lastSaved = target.currentTime; save(); } };
     const onPause = () => save();
     const onVideoEnded = () => { save(true); onEndedRef.current?.(); };
     const onPageHide = () => save();
@@ -147,9 +150,9 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
     // UI player video elementini ichkarida almashtirishi mumkin. Capture fazasi
     // yangi yaratilgan video eventlarini ham ishonchli ushlaydi.
     const root = ref.current;
-    const onMetadataCapture = (event: Event) => { if (useVideoEvent(event)) void onMetadata(); };
-    const onPauseCapture = (event: Event) => { if (useVideoEvent(event)) onPause(); };
-    const onEndedCapture = (event: Event) => { if (useVideoEvent(event)) onVideoEnded(); };
+    const onMetadataCapture = (event: Event) => { if (getVideoFromEvent(event)) void onMetadata(); };
+    const onPauseCapture = (event: Event) => { if (getVideoFromEvent(event)) onPause(); };
+    const onEndedCapture = (event: Event) => { if (getVideoFromEvent(event)) onVideoEnded(); };
     root.addEventListener("loadedmetadata", onMetadataCapture, true);
     root.addEventListener("timeupdate", onTimeUpdate, true);
     root.addEventListener("pause", onPauseCapture, true);
