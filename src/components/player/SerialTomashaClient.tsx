@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Eye, VideoOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Play, Sparkles, VideoOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Movie, Episode } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
@@ -27,11 +27,19 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   const videoSrc = currentEp.videoUrl || serial.videoUrl;
   const [episodeViews, setEpisodeViews] = useState(currentEp.viewCount ?? 0);
   const [showIndicator, setShowIndicator] = useState(true);
+  const [nextCountdown, setNextCountdown] = useState<number | null>(null);
   useEffect(() => {
     const key = `uzdub_episode_viewed_${currentEp.id}`;
     try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { return; }
     fetch(`/api/public/episode-view/${serial.id}/${currentEp.id}`, { method: "POST" }).then((response) => response.json()).then((data) => { if (typeof data.count === "number") setEpisodeViews(data.count); }).catch(() => {});
   }, [currentEp.id, serial.id]);
+  useEffect(() => { setNextCountdown(null); }, [currentEp.id]);
+  useEffect(() => {
+    if (nextCountdown === null || !nextEpisode) return;
+    if (nextCountdown <= 0) { router.push(`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`); return; }
+    const timer = window.setTimeout(() => setNextCountdown((value) => value === null ? null : value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [nextCountdown, nextEpisode, router, serial.slug]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#000" }}>
@@ -50,7 +58,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%, rgba(168,85,247,0.46), transparent 45%), radial-gradient(ellipse at 85% 90%, rgba(236,72,153,0.28), transparent 48%)" }} />
           <div className="relative overflow-hidden rounded-[15px] md:rounded-[23px] bg-black" onPointerDownCapture={() => setShowIndicator(false)}>
         {videoSrc ? (
-          <UzdubPlayer key={currentEp.id} src={videoSrc} poster={serial.backdropUrl || serial.posterUrl} movieId={serial.id} episodeId={currentEp.id} onEnded={nextEpisode ? () => router.push(`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`) : undefined} />
+          <UzdubPlayer key={currentEp.id} src={videoSrc} poster={serial.backdropUrl || serial.posterUrl} movieId={serial.id} episodeId={currentEp.id} onEnded={nextEpisode ? () => setNextCountdown(5) : undefined} />
         ) : (
           <div className="w-full flex flex-col items-center justify-center gap-3 text-center" style={{ aspectRatio: "16 / 9", background: "#0d0d12" }}>
             <VideoOff className="h-10 w-10" style={{ color: "var(--text-muted)" }} />
@@ -65,6 +73,7 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <div className="h-11 w-11 md:h-16 md:w-16 rounded-lg md:rounded-xl flex items-center justify-center text-2xl md:text-4xl font-black text-white" style={{ background: "linear-gradient(145deg, #a855f7, #4c1d95 60%, #16052d)", boxShadow: "inset 0 1px 10px rgba(255,255,255,0.3), 0 5px 16px rgba(96,33,180,0.65)", fontFamily: "var(--font-display)" }}>{currentEp.episode}</div>
           <div className="leading-tight"><p className="text-sm md:text-base font-bold text-white">{currentEp.season}-fasl, {currentEp.episode}-qism</p><p className="text-[11px] md:text-xs mt-1" style={{ color: "#d8b4fe" }}>Bu faslda {currentSeasonCount} qism</p></div>
         </div>}
+        {nextCountdown !== null && nextEpisode ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"><div className="w-full max-w-sm rounded-3xl p-5 text-center" style={{ background: "linear-gradient(145deg, rgba(31,18,58,.98), rgba(10,10,18,.98))", border: "1px solid rgba(216,180,254,.7)", boxShadow: "0 0 44px rgba(139,92,246,.5)" }}><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-violet-200" style={{ background: "rgba(124,58,237,.26)" }}><Sparkles className="h-6 w-6" /></span><p className="mt-3 text-sm text-violet-200">Keyingi qism boshlanmoqda</p><h2 className="mt-1 text-xl font-bold text-white">{nextEpisode.episode}-qism{nextEpisode.title ? `: ${nextEpisode.title}` : ""}</h2><p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>{nextCountdown} soniyadan keyin avtomatik ochiladi</p><div className="mt-5 flex gap-2"><button type="button" onClick={() => router.push(`/serial/${serial.slug}/qism/${nextEpisode.season}/${nextEpisode.episode}`)} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white" style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)" }}><Play className="h-4 w-4 fill-white" />Hozir ochish</button><button type="button" onClick={() => setNextCountdown(null)} className="inline-flex items-center justify-center rounded-xl px-3 text-sm text-white" style={{ border: "1px solid rgba(255,255,255,.17)" }} aria-label="Avtomatik o'tishni bekor qilish"><X className="h-4 w-4" /></button></div></div></div> : null}
           </div>
         </div>
       </div>
