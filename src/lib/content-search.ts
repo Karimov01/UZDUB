@@ -3,7 +3,7 @@ import type { ContentType, Movie } from "@/types/movie";
 const TYPES = new Set<ContentType>(["MOVIE", "SERIAL", "CARTOON"]);
 const SORTS = new Set(["newest", "popular", "rating", "views", "title"]);
 export type SearchInput = { q: string; type?: ContentType; genres: string[]; country?: string; from?: number; to?: number; rating?: number; language?: string; dubbing?: string; sort: "newest" | "popular" | "rating" | "views" | "title"; page: number; size: number };
-export const normalizeSearch = (value: string) => value.toLocaleLowerCase("uz-UZ").replace(/[’ʻʼ`]/g, "'").replace(/\s+/g, " ").trim();
+export const normalizeSearch = (value?: string) => (value ?? "").toLocaleLowerCase("uz-UZ").replace(/[’ʻʼ`]/g, "'").replace(/\s+/g, " ").trim();
 
 export function parseSearchParams(params: URLSearchParams): SearchInput {
   const number = (key: string, min: number, max: number) => { const value = Number(params.get(key)); return Number.isFinite(value) && value >= min && value <= max ? value : undefined; };
