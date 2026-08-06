@@ -1,13 +1,11 @@
 @import "tailwindcss";
 
 @media (min-width: 1024px) {
-  main.grid > .min-w-0 > .mt-5.grid,
-  main > .grid > .min-w-0 > .mt-5.grid {
+  .min-h-screen main .mt-5.grid {
     display: block !important;
   }
 
-  main.grid > .min-w-0 > .mt-5.grid > * + *,
-  main > .grid > .min-w-0 > .mt-5.grid > * + * {
+  .min-h-screen main .mt-5.grid > * + * {
     margin-top: 1rem;
   }
 }
