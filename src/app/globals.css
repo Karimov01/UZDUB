@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@media (min-width: 1024px) {
+  main > .grid > .min-w-0 > .mt-5.grid {
+    display: block !important;
+  }
+
+  main > .grid > .min-w-0 > .mt-5.grid > * + * {
+    margin-top: 1rem;
+  }
+}
+
 :root {
   --bg-primary: #0A0A0F;
   --bg-secondary: #0F0F1A;
