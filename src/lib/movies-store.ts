@@ -191,13 +191,14 @@ export async function getWatchProgresses(userId: string, limit = 12): Promise<St
 export type AppSettings = {
   siteName: string; siteDesc: string; maintenanceMode: boolean; registrationOpen: boolean;
   emailNotifications: boolean; pushNotifications: boolean; defaultLanguage: string;
-  contentPerPage: string; maxUploadSize: string; watermarkEnabled: boolean;
+  contentPerPage: string; maxUploadSize: string; watermarkEnabled: boolean; telegramChannelUrl: string;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
   siteName: "UZDUB Play", siteDesc: "O'zbekistonning premium kino va serial platformasi",
   maintenanceMode: false, registrationOpen: true, emailNotifications: true, pushNotifications: false,
   defaultLanguage: "uz", contentPerPage: "24", maxUploadSize: "500", watermarkEnabled: true,
+  telegramChannelUrl: "https://t.me/uzdub_media",
 };
 
 export async function readSettings(): Promise<AppSettings> {

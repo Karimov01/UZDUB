@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Globe, Bell, Shield, Palette } from "lucide-react";
+import { Save, Globe, Bell, Shield, Palette, Send } from "lucide-react";
 
 function Toggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   return (
@@ -21,10 +21,11 @@ export default function SozlamalarPage() {
     siteName: "UZDUB Play", siteDesc: "O'zbekistonning eng premium kino va serial platformasi",
     maintenanceMode: false, registrationOpen: true, emailNotifications: true,
     pushNotifications: false, defaultLanguage: "uz", contentPerPage: "24",
-    maxUploadSize: "500", watermarkEnabled: true,
+    maxUploadSize: "500", watermarkEnabled: true, telegramChannelUrl: "https://t.me/uzdub_media",
   });
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -38,13 +39,17 @@ export default function SozlamalarPage() {
   const set = (key: string, value: unknown) => setSettings((p) => ({ ...p, [key]: value }));
 
   const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     setError("");
-    const response = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
-    const data = await response.json();
-    if (!response.ok) { setError(data.error ?? "Sozlamalarni saqlab bo'lmadi"); return; }
-    setSettings(data.settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      const response = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+      const data = await response.json();
+      if (!response.ok) { setError(data.error ?? "Sozlamalarni saqlab bo'lmadi"); return; }
+      setSettings(data.settings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally { setSaving(false); }
   };
 
   const inputClass = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
@@ -59,15 +64,17 @@ export default function SozlamalarPage() {
         </div>
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+          disabled={saving || loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
           style={{ background: saved ? "#10B981" : "linear-gradient(135deg, #7C3AED, #EC4899)" }}
         >
           <Save className="h-4 w-4" />
-          {saved ? "Saqlandi!" : "Saqlash"}
+          {saving ? "Saqlanmoqda..." : saved ? "Saqlandi!" : "Saqlash"}
         </button>
       </div>
       {loading && <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Sozlamalar bazadan yuklanmoqda...</p>}
       {error && <p className="text-sm mb-4 text-red-400">{error}</p>}
+      {saved && <p className="text-sm mb-4 text-emerald-400">Telegram kanal havolasi muvaffaqiyatli saqlandi.</p>}
 
       <div className="space-y-5">
         {/* General */}
@@ -106,6 +113,12 @@ export default function SozlamalarPage() {
               <input className={inputClass} style={inputStyle} type="number" value={settings.maxUploadSize} onChange={(e) => set("maxUploadSize", e.target.value)} />
             </div>
           </div>
+        </div>
+
+        <div className="p-5 rounded-2xl space-y-4" style={{ background: "linear-gradient(145deg,rgba(16,31,48,.82),rgba(13,17,30,.96))", border: "1px solid rgba(50,184,242,.35)", boxShadow: "0 0 24px rgba(50,184,242,.08)" }}>
+          <div className="flex items-center gap-2 mb-1"><span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg,#229ED9,#32B8F2)" }}><Send className="h-4 w-4 fill-white text-white" /></span><div><h3 className="font-semibold text-white text-sm" style={{ fontFamily: "var(--font-display)" }}>Telegram kanal sozlamalari</h3><p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Tomosha sahifalaridagi yagona Telegram tugmasi shu havoladan foydalanadi.</p></div></div>
+          <div><label className="block text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>Telegram kanal havolasi</label><input className={inputClass} style={inputStyle} value={settings.telegramChannelUrl} placeholder="https://t.me/uzdub_media" onChange={(event) => set("telegramChannelUrl", event.currentTarget.value)} /><p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>t.me/kanal yoki @kanal ko'rinishida ham yozishingiz mumkin.</p></div>
+          <button type="button" onClick={handleSave} disabled={saving || loading} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-55" style={{ background: "linear-gradient(135deg,#229ED9,#32B8F2)", boxShadow: "0 0 16px rgba(50,184,242,.22)" }}><Save className="h-4 w-4" />{saving ? "Saqlanmoqda..." : "Saqlash"}</button>
         </div>
 
         {/* Notifications */}
