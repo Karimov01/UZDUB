@@ -56,12 +56,14 @@ async function createTitleDraft(input: Extract<typeof AiOfficeDraftInput._output
 async function createEpisodeDraft(input: Extract<typeof AiOfficeDraftInput._output, { contentType: "EPISODE" }>) {
   const parent = await getMovieBySlug(input.parentSlug);
   if (!parent || parent.type !== "SERIAL") throw new ApiError("PARENT_SERIES_NOT_FOUND", 404);
-  if (parent.episodes?.some((item) => item.season === input.season && item.episode === input.episode)) throw new ApiError("EPISODE_ALREADY_EXISTS", 409);
-  const id = randomUUID(), now = new Date().toISOString();
-  const updated: Movie = { ...parent, status: "DRAFT", episodes: [...(parent.episodes ?? []), { id, movieId: parent.id, season: input.season, episode: input.episode, title: input.title, description: input.description, videoUrl: input.playerUrl, duration: input.duration, viewCount: 0, createdAt: now, updatedAt: now }], updatedAt: now };
+  const existing = parent.episodes?.find((item) => item.season === input.season && item.episode === input.episode);
+  const id = existing?.id ?? randomUUID(), now = new Date().toISOString();
+  const episode = { ...existing, id, movieId: parent.id, season: input.season, episode: input.episode, title: input.title, description: input.description, videoUrl: input.playerUrl, duration: input.duration, viewCount: existing?.viewCount ?? 0, createdAt: existing?.createdAt ?? now, updatedAt: now };
+  const episodes = existing ? (parent.episodes ?? []).map((item) => item.id === existing.id ? episode : item) : [...(parent.episodes ?? []), episode];
+  const updated: Movie = { ...parent, status: "DRAFT", episodes, updatedAt: now };
   await updateMovie(parent.id, updated);
   revalidatePath(`/serial/${parent.slug}`);
-  return { id: `${parent.id}:${id}`, status: "DRAFT" as const, url: `https://uzdub.com/serial/${parent.slug}/qism/${input.season}/${input.episode}` };
+  return { id: `${parent.id}:${id}`, status: "DRAFT" as const, url: `https://uzdub.com/serial/${parent.slug}/qism/${input.season}/${input.episode}`, updatedExisting: Boolean(existing) };
 }
 
 function json(body: unknown, status: number) { return NextResponse.json(body, { status, headers: responseHeaders() }); }
