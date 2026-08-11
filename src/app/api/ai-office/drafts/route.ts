@@ -63,7 +63,7 @@ async function createEpisodeDraft(input: Extract<typeof AiOfficeDraftInput._outp
   const updated: Movie = { ...parent, status: "DRAFT", episodes, updatedAt: now };
   await updateMovie(parent.id, updated);
   revalidatePath(`/serial/${parent.slug}`);
-  return { id: `${parent.id}:${id}`, status: "DRAFT" as const, url: `https://uzdub.com/serial/${parent.slug}/qism/${input.season}/${input.episode}`, updatedExisting: Boolean(existing) };
+  return { id: parent.id, episodeId: id, status: "DRAFT" as const, url: `https://uzdub.com/serial/${parent.slug}/qism/${input.season}/${input.episode}`, updatedExisting: Boolean(existing), approvalRequired: true, publishPath: `/api/ai-office/drafts/${parent.id}/publish` };
 }
 
 function json(body: unknown, status: number) { return NextResponse.json(body, { status, headers: responseHeaders() }); }
