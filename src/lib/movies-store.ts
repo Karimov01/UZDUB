@@ -21,6 +21,7 @@ function ensureTable() {
       sql`CREATE TABLE IF NOT EXISTS movies (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, data JSONB NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
+      sql`DO $$ BEGIN CREATE TABLE ai_office_requests (idempotency_key TEXT PRIMARY KEY, payload_hash TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN ('PENDING','COMPLETED','FAILED')), result JSONB, last_error_code TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()); EXCEPTION WHEN duplicate_table OR unique_violation THEN NULL; END $$`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT NOT NULL DEFAULT 'FREE'`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_telegram_admin_notifications BOOLEAN NOT NULL DEFAULT false`,
@@ -285,6 +286,27 @@ export async function incrementView(id: string): Promise<number | null> {
   `) as { count: number }[];
   return rows[0]?.count ?? null;
 }
+
+export async function getMovieBySlug(slug: string): Promise<Movie | undefined> {
+  await ensureTable(); const sql = db();
+  const rows = (await sql`SELECT data FROM movies WHERE slug = ${slug} LIMIT 1`) as { data: Movie }[];
+  return rows[0]?.data;
+}
+
+type AiOfficeClaim = { status: "CLAIMED" } | { status: "REUSED"; result: { id: string; status: "DRAFT"; url?: string } } | { status: "CONFLICT" | "IN_PROGRESS" };
+export async function claimAiOfficeRequest(idempotencyKey: string, hash: string): Promise<AiOfficeClaim> {
+  await ensureTable(); const sql = db();
+  const inserted = await sql`INSERT INTO ai_office_requests (idempotency_key, payload_hash, state) VALUES (${idempotencyKey}, ${hash}, 'PENDING') ON CONFLICT DO NOTHING RETURNING idempotency_key` as unknown[];
+  if (inserted.length) return { status: "CLAIMED" };
+  const rows = await sql`SELECT payload_hash AS "payloadHash", state, result FROM ai_office_requests WHERE idempotency_key = ${idempotencyKey} LIMIT 1` as { payloadHash: string; state: string; result?: { id: string; status: "DRAFT"; url?: string } }[];
+  const existing = rows[0];
+  if (!existing || existing.payloadHash !== hash) return { status: "CONFLICT" };
+  if (existing.state === "COMPLETED" && existing.result) return { status: "REUSED", result: existing.result };
+  if (existing.state === "FAILED") { const retried = await sql`UPDATE ai_office_requests SET state = 'PENDING', last_error_code = NULL, updated_at = now() WHERE idempotency_key = ${idempotencyKey} AND payload_hash = ${hash} AND state = 'FAILED' RETURNING idempotency_key` as unknown[]; if (retried.length) return { status: "CLAIMED" }; }
+  return { status: "IN_PROGRESS" };
+}
+export async function completeAiOfficeRequest(idempotencyKey: string, result: { id: string; status: "DRAFT"; url?: string }): Promise<void> { await ensureTable(); const sql = db(); await sql`UPDATE ai_office_requests SET state = 'COMPLETED', result = ${JSON.stringify(result)}::jsonb, updated_at = now() WHERE idempotency_key = ${idempotencyKey} AND state = 'PENDING'`; }
+export async function failAiOfficeRequest(idempotencyKey: string, code: string): Promise<void> { await ensureTable(); const sql = db(); await sql`UPDATE ai_office_requests SET state = 'FAILED', last_error_code = ${code}, updated_at = now() WHERE idempotency_key = ${idempotencyKey} AND state = 'PENDING'`; }
 
 export async function incrementEpisodeView(movieId: string, episodeId: string): Promise<number | null> {
   const movie = await getMovie(movieId);
