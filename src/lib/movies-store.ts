@@ -22,6 +22,7 @@ function ensureTable() {
       sql`CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT now())`,
       sql`CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
       sql`DO $$ BEGIN CREATE TABLE ai_office_requests (idempotency_key TEXT PRIMARY KEY, payload_hash TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN ('PENDING','COMPLETED','FAILED')), result JSONB, last_error_code TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()); EXCEPTION WHEN duplicate_table OR unique_violation THEN NULL; END $$`,
+      sql`CREATE TABLE IF NOT EXISTS ai_office_publish_approvals (token_hash TEXT PRIMARY KEY, draft_id TEXT NOT NULL, admin_id BIGINT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT NOT NULL DEFAULT 'FREE'`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_telegram_admin_notifications BOOLEAN NOT NULL DEFAULT false`,
@@ -266,6 +267,17 @@ export async function updateMovie(id: string, movie: Movie): Promise<boolean> {
     WHERE id = ${id} RETURNING id
   `) as unknown[];
   return rows.length > 0;
+}
+
+export async function createAiOfficePublishApproval(input: { tokenHash: string; draftId: string; adminId: number; expiresAt: string }): Promise<void> {
+  await ensureTable(); const sql = db();
+  await sql`INSERT INTO ai_office_publish_approvals (token_hash, draft_id, admin_id, expires_at) VALUES (${input.tokenHash}, ${input.draftId}, ${input.adminId}, ${input.expiresAt})`;
+}
+
+export async function consumeAiOfficePublishApproval(input: { tokenHash: string; adminId: number }): Promise<{ draftId: string } | undefined> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`UPDATE ai_office_publish_approvals SET consumed_at = now() WHERE token_hash = ${input.tokenHash} AND admin_id = ${input.adminId} AND consumed_at IS NULL AND expires_at > now() RETURNING draft_id AS "draftId"` as { draftId: string }[];
+  return rows[0];
 }
 
 export async function deleteMovie(id: string): Promise<boolean> {
