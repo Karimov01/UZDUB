@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 type Update = { callback_query?: { id?: string; data?: string; from?: { id?: number }; message?: { chat?: { id?: number } } } };
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 function equal(expected: string, actual: string | null) { if (!actual) return false; const a = Buffer.from(expected), b = Buffer.from(actual); return a.length === b.length && timingSafeEqual(a, b); }
-async function telegram(method: string, body: Record<string, unknown>) { const token = process.env.TELEGRAM_BOT_TOKEN; if (!token) throw new Error("Telegram is not configured"); await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); }
+async function telegram(method: string, body: Record<string, unknown>) { const token = process.env.TELEGRAM_BOT_TOKEN; if (!token) throw new Error("Telegram is not configured"); const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!response.ok) throw new Error(`Telegram ${method} failed with HTTP ${response.status}`); }
 
 export async function POST(request: Request) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;

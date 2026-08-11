@@ -271,7 +271,8 @@ export async function updateMovie(id: string, movie: Movie): Promise<boolean> {
 
 export async function createAiOfficePublishApproval(input: { tokenHash: string; draftId: string; adminId: number; expiresAt: string }): Promise<void> {
   await ensureTable(); const sql = db();
-  await sql`INSERT INTO ai_office_publish_approvals (token_hash, draft_id, admin_id, expires_at) VALUES (${input.tokenHash}, ${input.draftId}, ${input.adminId}, ${input.expiresAt})`;
+  await sql`INSERT INTO ai_office_publish_approvals (token_hash, draft_id, admin_id, expires_at) VALUES (${input.tokenHash}, ${input.draftId}, ${input.adminId}, ${input.expiresAt})
+    ON CONFLICT (token_hash) DO UPDATE SET draft_id = EXCLUDED.draft_id, admin_id = EXCLUDED.admin_id, expires_at = EXCLUDED.expires_at, consumed_at = NULL`;
 }
 
 export async function consumeAiOfficePublishApproval(input: { tokenHash: string; adminId: number }): Promise<{ draftId: string } | undefined> {
