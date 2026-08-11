@@ -8,6 +8,7 @@ const movie = rows[0]?.data;
 console.log(JSON.stringify({
   found: Boolean(movie),
   title: movie?.title,
+  slug: movie?.slug,
   originalTitle: movie?.originalTitle,
   year: movie?.year,
   status: movie?.status,
