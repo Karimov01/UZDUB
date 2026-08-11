@@ -23,5 +23,5 @@ export async function handleAiOfficeTelegramUpdate(update: AiOfficeTelegramUpdat
   return true;
 }
 
-async function telegram(method: string, body: Record<string, unknown>) { const token = process.env.TELEGRAM_BOT_TOKEN; if (!token) throw new Error("Telegram is not configured"); const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!response.ok) throw new Error(`Telegram ${method} failed with HTTP ${response.status}`); }
+async function telegram(method: string, body: Record<string, unknown>) { const token = process.env.AI_OFFICE_TELEGRAM_BOT_TOKEN; if (!token) throw new Error("AI Office Telegram is not configured"); const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!response.ok) throw new Error(`Telegram ${method} failed with HTTP ${response.status}`); }
 function escapeHtml(value: string): string { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"); }

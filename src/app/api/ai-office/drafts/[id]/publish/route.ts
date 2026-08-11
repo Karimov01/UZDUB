@@ -10,7 +10,7 @@ export async function POST(request: Request, { params }: Ctx) {
   if (!validBearer(request.headers.get("authorization"), process.env.UZDUB_AI_OFFICE_API_KEY)) return reply({ error: "UNAUTHORIZED" }, 401);
   const key = request.headers.get("idempotency-key")?.trim() ?? "";
   if (!/^[A-Za-z0-9:_-]{8,200}$/.test(key)) return reply({ error: "INVALID_IDEMPOTENCY_KEY" }, 400);
-  const signingSecret = process.env.APPROVAL_SIGNING_SECRET?.trim(), botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const signingSecret = process.env.APPROVAL_SIGNING_SECRET?.trim(), botToken = process.env.AI_OFFICE_TELEGRAM_BOT_TOKEN?.trim();
   const adminIds = parseAdminIds(process.env.ADMIN_TELEGRAM_IDS);
   if (!signingSecret || signingSecret.length < 32 || !botToken || adminIds.length === 0) return reply({ error: "APPROVAL_CHANNEL_UNCONFIGURED" }, 503);
   const { id } = await params, movie = await getMovie(id);

@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { saveTelegramProfilePhoto, sendNewUserAdminNotification, sendTelegramMessage, verifyTelegramStart } from "@/lib/auth/telegram";
 import { getTelegramNotificationRecipient, getUserProfile, getUserStats } from "@/lib/movies-store";
-import { handleAiOfficeTelegramUpdate, type AiOfficeTelegramUpdate } from "@/lib/ai-office-telegram";
 export const runtime = "nodejs";
-type Update = AiOfficeTelegramUpdate & { message?: { text?: string; chat?: { id: number }; from?: { id: number; first_name: string; last_name?: string; username?: string; language_code?: string } } };
+type Update = { message?: { text?: string; chat?: { id: number }; from?: { id: number; first_name: string; last_name?: string; username?: string; language_code?: string } } };
 export async function POST(request: Request) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!secret || request.headers.get("x-telegram-bot-api-secret-token") !== secret) return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
   const update = await request.json() as Update;
-  if (await handleAiOfficeTelegramUpdate(update)) return NextResponse.json({ ok: true });
   const message = update.message; const text = message?.text?.trim(); const from = message?.from;
   if (!message?.chat?.id || !from || !text?.startsWith("/start")) return NextResponse.json({ ok: true });
   const payload = text.split(/\s+/, 2)[1] || "";
