@@ -1,0 +1,13 @@
+import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { validBearer } from "@/lib/ai-office-contract";
+import { fillMovieMetadata } from "@/lib/ai-movie-fill";
+import { getMovie, updateMovie } from "@/lib/movies-store";
+import { mapGenres } from "@/lib/movie-input";
+import { createAutomaticSeo } from "@/lib/seo";
+export const runtime = "nodejs";
+type Ctx = { params: Promise<{ id: string }> };
+const Input = z.object({ title: z.string().trim().min(1).max(200), originalTitle: z.string().trim().min(1).max(200), year: z.number().int().min(1870).max(2100), playerUrl: z.string().trim().url().refine((value) => value.startsWith("https://")).max(2000) }).strict();
+export async function POST(request: Request, { params }: Ctx) { if (!validBearer(request.headers.get("authorization"), process.env.UZDUB_AI_OFFICE_API_KEY)) return reply({ error: "UNAUTHORIZED" }, 401); const { id } = await params; const parsed = Input.safeParse(await request.json().catch(() => null)); if (!parsed.success) return reply({ error: "VALIDATION_ERROR" }, 400); const existing = await getMovie(id); if (!existing) return reply({ error: "DRAFT_NOT_FOUND" }, 404); if (existing.status !== "DRAFT" || (existing.type !== "MOVIE" && existing.type !== "SERIAL")) return reply({ error: "DRAFT_NOT_ENRICHABLE" }, 409); let filled; try { filled = await fillMovieMetadata({ title: parsed.data.title, originalTitle: parsed.data.originalTitle, year: parsed.data.year, type: existing.type }); } catch { return reply({ error: "AI_ENRICHMENT_FAILED" }, 502); } const description = filled.description, shortDesc = filled.shortDesc; const seo = createAutomaticSeo({ title: parsed.data.title, year: parsed.data.year, type: existing.type, shortDesc, description }); const updated = { ...existing, title: parsed.data.title, originalTitle: parsed.data.originalTitle, year: parsed.data.year, description, shortDesc, posterUrl: filled.posterUrl, backdropUrl: filled.backdropUrl, videoUrl: parsed.data.playerUrl, duration: filled.duration, country: filled.country, language: filled.language, dubbing: filled.dubbing, imdbRating: filled.imdbRating, genres: mapGenres(filled.genres), ...seo, updatedAt: new Date().toISOString() }; await updateMovie(id, updated); revalidatePath("/admin/kinolar"); return reply({ id, status: "DRAFT", metadataEnriched: true, mediaAttached: true, approvalRequired: true, publishPath: `/api/ai-office/drafts/${id}/publish` }, 200); }
+function reply(body: unknown, status: number) { return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } }); }

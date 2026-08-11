@@ -6,6 +6,7 @@ import { AiOfficeDraftInput, payloadHash, validBearer } from "@/lib/ai-office-co
 import { addMovie, claimAiOfficeRequest, completeAiOfficeRequest, failAiOfficeRequest, getMovieBySlug, slugExists, updateMovie } from "@/lib/movies-store";
 import { mapGenres, slugify } from "@/lib/movie-input";
 import { createAutomaticSeo } from "@/lib/seo";
+import { fillMovieMetadata } from "@/lib/ai-movie-fill";
 
 export const runtime = "nodejs";
 const MAX_BODY_BYTES = 64 * 1024;
@@ -43,11 +44,13 @@ async function createTitleDraft(input: Extract<typeof AiOfficeDraftInput._output
   let slug = base, suffix = 2;
   while (await slugExists(slug)) slug = `${base}-${suffix++}`;
   const id = randomUUID(), type: ContentType = input.contentType === "SERIES" ? "SERIAL" : "MOVIE";
-  const seo = createAutomaticSeo({ title: input.title, year: input.year, type, shortDesc: input.shortDescription, description: input.description });
-  const movie: Movie = { id, slug, title: input.title, originalTitle: input.originalTitle, description: input.description, shortDesc: input.shortDescription, posterUrl: input.posterUrl, backdropUrl: input.backdropUrl, videoUrl: input.playerUrl, trailerUrl: input.trailerUrl, type, status: "DRAFT", year: input.year, duration: input.duration, country: input.country, language: input.language, viewCount: 0, isFeatured: input.isFeatured, isTrending: input.isTrending, isPremium: input.isPremium, genres: mapGenres(input.genres), episodes: [], ...seo, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  let filled; try { filled = await fillMovieMetadata({ title: input.title, originalTitle: input.originalTitle, year: input.year, type }); } catch { throw new ApiError("AI_ENRICHMENT_FAILED", 502); }
+  const description = filled.description || input.description, shortDesc = filled.shortDesc || input.shortDescription;
+  const seo = createAutomaticSeo({ title: input.title, year: input.year, type, shortDesc, description });
+  const movie: Movie = { id, slug, title: input.title, originalTitle: input.originalTitle, description, shortDesc, posterUrl: filled.posterUrl ?? input.posterUrl, backdropUrl: filled.backdropUrl ?? input.backdropUrl, videoUrl: input.playerUrl, trailerUrl: input.trailerUrl, type, status: "DRAFT", year: input.year, duration: filled.duration ?? input.duration, country: filled.country || input.country, language: filled.language || input.language, dubbing: filled.dubbing, imdbRating: filled.imdbRating, viewCount: 0, isFeatured: input.isFeatured, isTrending: input.isTrending, isPremium: input.isPremium, genres: mapGenres(filled.genres.length ? filled.genres : input.genres), episodes: [], ...seo, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   await addMovie(movie);
   revalidatePath(type === "SERIAL" ? "/serial" : "/kino");
-  return { id, status: "DRAFT" as const, url: `https://uzdub.com/${type === "SERIAL" ? "serial" : "kino"}/${slug}` };
+  return { id, status: "DRAFT" as const, url: `https://uzdub.com/${type === "SERIAL" ? "serial" : "kino"}/${slug}`, metadataEnriched: true, approvalRequired: true, publishPath: `/api/ai-office/drafts/${id}/publish` };
 }
 
 async function createEpisodeDraft(input: Extract<typeof AiOfficeDraftInput._output, { contentType: "EPISODE" }>) {

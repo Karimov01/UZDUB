@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { validBearer } from "@/lib/ai-office-contract";
+import { getMovie, updateMovie } from "@/lib/movies-store";
+export const runtime = "nodejs";
+type Ctx = { params: Promise<{ id: string }> };
+export async function POST(request: Request, { params }: Ctx) { if (!validBearer(request.headers.get("authorization"), process.env.UZDUB_AI_OFFICE_API_KEY)) return reply({ error: "UNAUTHORIZED" }, 401); const key = request.headers.get("idempotency-key")?.trim() ?? ""; if (!/^[A-Za-z0-9:_-]{8,200}$/.test(key)) return reply({ error: "INVALID_IDEMPOTENCY_KEY" }, 400); const { id } = await params; const movie = await getMovie(id); if (!movie) return reply({ error: "DRAFT_NOT_FOUND" }, 404); if (movie.status === "PUBLISHED") return reply({ id, status: "PUBLISHED", url: publicUrl(movie) }, 200); if (movie.status !== "DRAFT") return reply({ error: "DRAFT_NOT_PUBLISHABLE" }, 409); if (!movie.title || !movie.originalTitle || !movie.year || !movie.description || !movie.posterUrl || !movie.videoUrl) return reply({ error: "QA_REQUIRED_FIELDS_MISSING" }, 409); const updated = { ...movie, status: "PUBLISHED" as const, publishedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }; await updateMovie(id, updated); revalidatePath(movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`); return reply({ id, status: "PUBLISHED", url: publicUrl(updated) }, 200); }
+function publicUrl(movie: { type: string; slug: string }): string { return `https://uzdub.com/${movie.type === "SERIAL" ? "serial" : "kino"}/${movie.slug}`; }
+function reply(body: unknown, status: number) { return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } }); }
