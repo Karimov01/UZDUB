@@ -6,7 +6,7 @@ import { buildEpisodeJsonLd, buildEpisodeMetadata } from "@/lib/seo";
 import JsonLd from "@/components/seo/JsonLd";
 import SerialTomashaClient from "@/components/player/SerialTomashaClient";
 
-export const revalidate = 60;
+export const revalidate = 21600;
 
 type PageProps = { params: Promise<{ slug: string; season: string; episode: string }> };
 
