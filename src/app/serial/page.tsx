@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getSerials } from "@/lib/movies";
 import MovieCard from "@/components/movie/MovieCard";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = { title: "Seriallar" };
 
