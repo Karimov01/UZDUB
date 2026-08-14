@@ -3,7 +3,7 @@ import { getKinolar } from "@/lib/movies";
 import MovieCard from "@/components/movie/MovieCard";
 import { Film } from "lucide-react";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export const metadata: Metadata = { title: "Kinolar" };
 
