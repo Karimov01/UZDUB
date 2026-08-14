@@ -7,14 +7,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        // Admin panel va shaxsiy sahifalar qidiruv tizimlaridan yashiriladi
-        disallow: ["/admin", "/admin/", "/kirish", "/api/"],
+        disallow: ["/admin", "/admin/", "/kirish", "/profilim", "/api/"],
       },
-      // Yandex uchun alohida qoida (Yandexbot ba'zan umumiy qoidani e'tiborsiz qoldiradi)
       {
         userAgent: "Yandex",
         allow: "/",
-        disallow: ["/admin", "/admin/", "/kirish", "/api/"],
+        disallow: ["/admin", "/admin/", "/kirish", "/profilim", "/api/"],
       },
     ],
     sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/video-sitemap.xml`],

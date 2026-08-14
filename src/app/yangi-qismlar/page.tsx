@@ -3,7 +3,7 @@ import { Clapperboard, Sparkles } from "lucide-react";
 import HomeEpisodeCard from "@/components/home/HomeEpisodeCard";
 import { getLatestEpisodes } from "@/lib/movies";
 
-export const revalidate = 60;
+export const revalidate = 21600;
 export const metadata: Metadata = {
   title: "Yangi qismlar",
   description: "UZDUB Play platformasida eng so'nggi qo'shilgan serial qismlarini tomosha qiling.",
@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 
 export default async function LatestEpisodesPage() {
   const episodes = await getLatestEpisodes(120);
-
   return (
     <main className="min-h-screen px-4 pb-16 pt-10 md:px-8" style={{ background: "var(--bg-primary)" }}>
       <div className="mx-auto max-w-[1400px]">

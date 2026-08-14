@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="UZDUB Play">
+  <defs>
+    <linearGradient id="g" x1="12" y1="10" x2="108" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#g)"/>
+  <path d="M49 37.5c0-5.4 5.9-8.7 10.5-5.9l34 21.1c4.4 2.7 4.4 9.1 0 11.8l-34 21.1C54.9 88.4 49 85.1 49 79.7V37.5Z" fill="#fff"/>
+</svg>
