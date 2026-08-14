@@ -10,10 +10,18 @@ export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-function revalidateAll(path?: string) {
-  for (const p of ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar", ...(path ? [path] : [])]) {
-    revalidatePath(p);
-  }
+function publicPaths(movie?: Movie): string[] {
+  const common = ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar"];
+  if (!movie) return common;
+  const contentPath = movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
+  const episodePaths = movie.type === "SERIAL"
+    ? (movie.episodes ?? []).map((episode) => `/serial/${movie.slug}/qism/${episode.season}/${episode.episode}`)
+    : [];
+  return [...common, contentPath, ...episodePaths];
+}
+
+function revalidateMovie(movie?: Movie) {
+  for (const path of publicPaths(movie)) revalidatePath(path);
 }
 
 export async function DELETE(_req: Request, { params }: Ctx) {
@@ -32,7 +40,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       { status: 404 }
     );
   }
-  revalidateAll();
+  revalidateMovie(existing);
   if (existing) void notifyIndexNow([`/${existing.type === "SERIAL" ? "serial" : "kino"}/${existing.slug}`]);
   return NextResponse.json({ ok: true });
 }
@@ -65,7 +73,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const updated: Movie = {
     ...existing,
     id,
-    slug: existing.slug, // slug o'zgarmaydi — eski havolalar buzilmasin
+    slug: existing.slug,
     title: d.title,
     originalTitle: d.originalTitle || undefined,
     description: d.description,
@@ -98,7 +106,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: `Bazaga saqlab bo'lmadi. ${msg}`.trim() }, { status: 500 });
   }
 
-  revalidateAll(updated.type === "SERIAL" ? `/serial/${updated.slug}` : `/kino/${updated.slug}`);
+  // Eski va yangi yo'llarni yangilash: tahrirlangan kino/serial/qism darhol ko'rinadi.
+  revalidateMovie(existing);
+  revalidateMovie(updated);
   void notifyIndexNow([`/${updated.type === "SERIAL" ? "serial" : "kino"}/${updated.slug}`, ...(updated.type === "SERIAL" ? (updated.episodes ?? []).map((episode) => `/serial/${updated.slug}/qism/${episode.season}/${episode.episode}`) : [])]);
   return NextResponse.json({ ok: true, movie: updated });
 }
