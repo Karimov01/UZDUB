@@ -6,7 +6,7 @@ import SerialDetail from "@/components/movie/SerialDetail";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildMovieMetadata, buildMovieJsonLd } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 21600;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
