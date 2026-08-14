@@ -10,7 +10,7 @@ import TrendingSection from "@/components/home/TrendingSection";
 import { HeroSkeleton, MovieCardSkeleton } from "@/components/ui/Skeleton";
 import { getHomePageData } from "@/lib/movies";
 
-export const revalidate = 21600;
+export const revalidate = 600;
 export const metadata: Metadata = { title: "O'zbek tilidagi kino va seriallar", description: "O'zbek tilidagi kino va seriallarni yuqori sifatda tomosha qiling." };
 
 export default async function HomePage() {
