@@ -51,13 +51,12 @@ function loadScripts(): Promise<void> {
     SCRIPTS.forEach((src) => {
       const existing = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
       if (existing) {
-        // Allaqachon qo'shilgan
         done();
         return;
       }
       const s = document.createElement("script");
       s.src = src;
-      s.async = false; // parallel yuklab, DOM tartibida bajaradi
+      s.async = false;
       s.onload = done;
       s.onerror = () => {
         failed = true;
@@ -103,9 +102,9 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
     let player: PlayerInstance | null = null;
     let cancelled = false;
     let video: HTMLVideoElement | null = null;
-    // Birinchi progress 5-soniyada saqlanadi, keyingilari 15 soniya oralig'ida.
+    // Birinchi progress 5-soniyada saqlanadi, keyingilari 60 soniya oralig'ida.
     // Shu sabab foydalanuvchi qisqa tomosha qilib sahifadan chiqsa ham "Davom ettirish" paydo bo'ladi.
-    let lastSaved = -10;
+    let lastSaved = -55;
     const progressUrl = movieId ? `/api/profile/progress?movieId=${encodeURIComponent(movieId)}${episodeId ? `&episodeId=${encodeURIComponent(episodeId)}` : ""}` : null;
     const resume = progressUrl ? fetch(progressUrl, { cache: "no-store" }).then((response) => response.ok ? response.json() : null).catch(() => null) : Promise.resolve(null);
     const save = (completed = false) => {
@@ -121,7 +120,7 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
       video = target;
       return target;
     };
-    const onTimeUpdate = (event: Event) => { const target = getVideoFromEvent(event); if (target && target.currentTime - lastSaved >= 15) { lastSaved = target.currentTime; save(); } };
+    const onTimeUpdate = (event: Event) => { const target = getVideoFromEvent(event); if (target && target.currentTime - lastSaved >= 60) { lastSaved = target.currentTime; save(); } };
     const onPause = () => save();
     const onVideoEnded = () => { save(true); onEndedRef.current?.(); };
     const onPageHide = () => save();
@@ -147,8 +146,6 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
       })
       .catch(() => {});
 
-    // UI player video elementini ichkarida almashtirishi mumkin. Capture fazasi
-    // yangi yaratilgan video eventlarini ham ishonchli ushlaydi.
     const root = ref.current;
     const onMetadataCapture = (event: Event) => { if (getVideoFromEvent(event)) void onMetadata(); };
     const onPauseCapture = (event: Event) => { if (getVideoFromEvent(event)) onPause(); };
@@ -180,8 +177,6 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
   const saveEmbedStart = () => {
     if (!isEmbedSource || !movieId || embedSavedRef.current) return;
     embedSavedRef.current = true;
-    // Iframe ichidagi vaqtni o'qish cross-origin xavfsizlik qoidasi bilan taqiqlangan.
-    // Shuning uchun bunday manbalarda foydalanuvchi tomoshani boshlagani saqlanadi.
     void fetch("/api/profile/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ movieId, episodeId, positionSeconds: 1, durationSeconds: 0, completed: false }) }).catch(() => {});
   };
   return (
