@@ -364,6 +364,7 @@
     display: none;
     z-index: 7;
 }
+.uzdub-spinner.uzdub-visible { display: block; }
 .uzdub-spinner > div {
     position: absolute;
     top: 0; left: 0;

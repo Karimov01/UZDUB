@@ -341,8 +341,12 @@ class UIManager {
     /*  Spinner                                                             */
     /* ------------------------------------------------------------------ */
 
-    showSpinner() { this.elements.spinner.style.display = ''; }
-    hideSpinner() { this.elements.spinner.style.display = 'none'; }
+    // CSS'da spinner boshlang'ich holatda yashirilgan. `style.display = ''`
+    // bu qoidani bekor qilmaydi, shuning uchun loader amalda ko'rinmas edi.
+    // Class orqali holatni boshqarish barcha yuklanish/buffer holatlarida
+    // ishonchli ishlaydi.
+    showSpinner() { this.elements.spinner.classList.add('uzdub-visible'); }
+    hideSpinner() { this.elements.spinner.classList.remove('uzdub-visible'); }
 
     /* ------------------------------------------------------------------ */
     /*  Error                                                               */
