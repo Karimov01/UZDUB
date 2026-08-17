@@ -56,6 +56,7 @@ export async function inspectPublisherContent(input: {
   contentId: string; type: "movie" | "serial"; title: string; originalTitle: string;
   year?: number; slug: string; siteUrl: string; adminUrl: string; playerUrl?: string;
   status: string; posterUrl?: string; description?: string;
+  episodes?: { id: string; season: number; episode: number; title: string; playerUrl?: string }[];
   episode?: { id: string; season: number; episode: number; title: string; playerUrl?: string };
 }> {
   const movie = (await readMovies()).find((item) => item.id === input.contentId);
@@ -78,6 +79,10 @@ export async function inspectPublisherContent(input: {
     year: movie.year, slug: movie.slug, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id),
     status: movie.status, posterUrl: movie.posterUrl, description: movie.description,
     playerUrl: movie.videoUrl,
+    ...(type === "serial" ? { episodes: (movie.episodes ?? []).map((episode) => ({
+      id: episode.id, season: episode.season, episode: episode.episode,
+      title: episode.title, playerUrl: episode.videoUrl,
+    })).sort((left, right) => left.episode - right.episode) } : {}),
   };
 }
 
