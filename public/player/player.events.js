@@ -104,8 +104,15 @@ class EventManager {
             this.ui.setHdBadge(this._detectHd(v.videoHeight));
         });
 
+        // Video manbasi birinchi marta serverdan yuklanayotganda `waiting`
+        // har doim ham kelmaydi. Shuning uchun yuklanish/bufferlanishning
+        // barcha asosiy holatlarida spinnerni aniq boshqaramiz.
+        this.on(v, 'loadstart', () => this.ui.showSpinner());
+        this.on(v, 'stalled', () => this.ui.showSpinner());
+        this.on(v, 'seeking', () => this.ui.showSpinner());
         this.on(v, 'waiting', () => this.ui.showSpinner());
         this.on(v, 'playing', () => { this.ui.hideSpinner(); this.ui.hideError(); });
+        this.on(v, 'loadeddata', () => this.ui.hideSpinner());
         this.on(v, 'canplay', () => this.ui.hideSpinner());
         this.on(v, 'ended',   () => { this.ui.setPlayIcon(false); });
 

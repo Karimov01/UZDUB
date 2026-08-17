@@ -208,6 +208,9 @@ class UZDUBPlayer {
 
     startContent(state) {
 
+        // Manba serverdan yoki HLS manifestdan javob kutayotgan paytda ham
+        // foydalanuvchi qora/poster ekranni emas, loading indikatorini ko'rsin.
+        if (this.ui) this.ui.showSpinner();
         this.sources.load(this.currentSource);
 
         if (this.isEmbed) return;
