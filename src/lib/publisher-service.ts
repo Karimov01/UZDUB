@@ -207,8 +207,8 @@ function isIdentityMatch(title: string, originalTitle: string, movie: Movie): bo
   const titleScore = similarity(title, candidateTitle);
   const originalScore = similarity(originalTitle, candidateOriginal);
   return (
+    originalScore === 1 ||
     (titleScore === 1 && originalScore >= 0.78) ||
-    (originalScore === 1 && titleScore >= 0.78) ||
     (titleScore >= 0.88 && originalScore >= 0.88)
   );
 }
