@@ -20,11 +20,7 @@ export async function POST(request: Request) {
     revalidatePath("/kino");
     revalidatePath(`/kino/${result.slug}`);
     revalidatePath(`/kino/${result.slug}/tomosha`);
-    return publisherJson({
-      success: result.success,
-      action: result.action,
-      contentId: result.contentId,
-    });
+    return publisherJson(result);
   } catch (error) {
     return publisherFailure(error);
   }

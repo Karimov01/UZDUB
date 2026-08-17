@@ -26,11 +26,7 @@ export async function POST(request: Request) {
     revalidatePath("/yangi-qismlar");
     revalidatePath(`/serial/${result.slug}`);
     revalidatePath(`/serial/${result.slug}/qism/${result.season}/${result.episode}`);
-    return publisherJson({
-      success: result.success,
-      action: result.action,
-      episode: result.episode,
-    });
+    return publisherJson(result);
   } catch (error) {
     return publisherFailure(error);
   }

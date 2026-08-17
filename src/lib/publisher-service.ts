@@ -1,7 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { ContentType, Episode, Movie } from "@/types/movie";
 import { fillMovieMetadata } from "@/lib/ai-movie-fill";
-import { addMovie, readMovies, slugExists, updateMovie } from "@/lib/movies-store";
+import {
+  addMovie,
+  createPublisherPlayerHistory,
+  getPublisherPlayerHistory,
+  markPublisherPlayerHistoryUndone,
+  readMovies,
+  slugExists,
+  updateMovie,
+} from "@/lib/movies-store";
 import { mapGenres, slugify } from "@/lib/movie-input";
 import { createAutomaticSeo } from "@/lib/seo";
 
@@ -24,6 +32,51 @@ export type PublisherFindResult =
   | { status: "not_found"; requiredFields: ["title", "originalTitle", "year"] };
 
 const REQUIRED_FIELDS = ["title", "originalTitle", "year"] as const;
+
+export async function searchPublisherContent(input: {
+  type: PublisherContentType; title: string; originalTitle?: string; year?: number;
+}): Promise<{ status: "matches" | "not_found"; matches: PublisherMatch[] }> {
+  const expectedType: ContentType = input.type === "serial" ? "SERIAL" : "MOVIE";
+  const title = normalizeTitle(input.title);
+  const originalTitle = normalizeTitle(input.originalTitle ?? "");
+  const matches = (await readMovies())
+    .filter((movie) => movie.type === expectedType)
+    .filter((movie) => !input.year || movie.year === input.year)
+    .map((movie) => ({ movie, score: searchScore(title, originalTitle, movie) }))
+    .filter(({ score }) => score >= 0.55)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 8)
+    .map(({ movie }) => toPublisherMatch(movie));
+  return { status: matches.length ? "matches" : "not_found", matches };
+}
+
+export async function inspectPublisherContent(input: {
+  contentId: string; season?: number; episode?: number;
+}): Promise<{
+  contentId: string; type: "movie" | "serial"; title: string; originalTitle: string;
+  year?: number; slug: string; siteUrl: string; adminUrl: string; playerUrl?: string;
+  episode?: { id: string; season: number; episode: number; title: string; playerUrl?: string };
+}> {
+  const movie = (await readMovies()).find((item) => item.id === input.contentId);
+  if (!movie) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  const type = movie.type === "SERIAL" ? "serial" : "movie";
+  if (type === "serial" && input.episode) {
+    const season = input.season ?? 1;
+    const episode = movie.episodes?.find(
+      (item) => item.season === season && item.episode === input.episode,
+    );
+    return {
+      contentId: movie.id, type, title: movie.title, originalTitle: movie.originalTitle ?? "",
+      year: movie.year, slug: movie.slug, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id),
+      ...(episode ? { episode: { id: episode.id, season, episode: episode.episode, title: episode.title, playerUrl: episode.videoUrl } } : {}),
+    };
+  }
+  return {
+    contentId: movie.id, type, title: movie.title, originalTitle: movie.originalTitle ?? "",
+    year: movie.year, slug: movie.slug, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id),
+    playerUrl: movie.videoUrl,
+  };
+}
 
 export async function findPublisherContent(input: PublisherIdentity): Promise<PublisherFindResult> {
   const expectedType: ContentType = input.type === "serial" ? "SERIAL" : "MOVIE";
@@ -113,7 +166,7 @@ export async function upsertPublisherEpisode(input: {
   moverWatchUrl?: string | null;
   moverEmbedUrl?: string | null;
   publicUrl?: string | null;
-}): Promise<{ success: true; action: "created" | "updated"; episode: number; season: number; slug: string }> {
+}): Promise<{ success: true; action: "created" | "updated" | "unchanged"; episode: number; season: number; slug: string; contentId: string; episodeId: string; oldPlayerUrl?: string; newPlayerUrl: string; historyId?: string; siteUrl: string; adminUrl: string }> {
   const movies = await readMovies();
   const serial = movies.find((movie) => movie.id === input.contentId);
   if (!serial) throw new PublisherError("CONTENT_NOT_FOUND", 404);
@@ -124,6 +177,9 @@ export async function upsertPublisherEpisode(input: {
   const existing = serial.episodes?.find(
     (item) => item.season === season && item.episode === input.episode,
   );
+  if (existing?.videoUrl === playerUrl) {
+    return { success: true, action: "unchanged", episode: input.episode, season, slug: serial.slug, contentId: serial.id, episodeId: existing.id, oldPlayerUrl: existing.videoUrl, newPlayerUrl: playerUrl, siteUrl: siteUrl(serial), adminUrl: adminUrl(serial.id) };
+  }
   const now = new Date().toISOString();
   const episode: Episode = {
     ...existing,
@@ -141,12 +197,23 @@ export async function upsertPublisherEpisode(input: {
     ? (serial.episodes ?? []).map((item) => item.id === existing.id ? episode : item)
     : [...(serial.episodes ?? []), episode];
   await updateMovie(serial.id, { ...serial, episodes, updatedAt: now });
+  const historyId = existing?.videoUrl ? randomUUID() : undefined;
+  if (historyId && existing?.videoUrl) {
+    await createPublisherPlayerHistory({ id: historyId, contentId: serial.id, episodeId: episode.id, season, episode: input.episode, oldPlayerUrl: existing.videoUrl, newPlayerUrl: playerUrl });
+  }
   return {
     success: true,
     action: existing ? "updated" : "created",
     episode: input.episode,
     season,
     slug: serial.slug,
+    contentId: serial.id,
+    episodeId: episode.id,
+    oldPlayerUrl: existing?.videoUrl,
+    newPlayerUrl: playerUrl,
+    historyId,
+    siteUrl: siteUrl(serial),
+    adminUrl: adminUrl(serial.id),
   };
 }
 
@@ -155,17 +222,43 @@ export async function updatePublisherMovieVideo(input: {
   moverWatchUrl?: string | null;
   moverEmbedUrl?: string | null;
   publicUrl?: string | null;
-}): Promise<{ success: true; action: "updated"; contentId: string; slug: string }> {
+}): Promise<{ success: true; action: "updated" | "unchanged"; contentId: string; slug: string; oldPlayerUrl?: string; newPlayerUrl: string; historyId?: string; siteUrl: string; adminUrl: string }> {
   const movies = await readMovies();
   const movie = movies.find((item) => item.id === input.contentId);
   if (!movie) throw new PublisherError("CONTENT_NOT_FOUND", 404);
   if (movie.type !== "MOVIE") throw new PublisherError("CONTENT_TYPE_MISMATCH", 409);
+  const playerUrl = preferredPlayerUrl(input);
+  if (movie.videoUrl === playerUrl) {
+    return { success: true, action: "unchanged", contentId: movie.id, slug: movie.slug, oldPlayerUrl: movie.videoUrl, newPlayerUrl: playerUrl, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id) };
+  }
   await updateMovie(movie.id, {
     ...movie,
-    videoUrl: preferredPlayerUrl(input),
+    videoUrl: playerUrl,
     updatedAt: new Date().toISOString(),
   });
-  return { success: true, action: "updated", contentId: movie.id, slug: movie.slug };
+  const historyId = movie.videoUrl ? randomUUID() : undefined;
+  if (historyId && movie.videoUrl) await createPublisherPlayerHistory({ id: historyId, contentId: movie.id, oldPlayerUrl: movie.videoUrl, newPlayerUrl: playerUrl });
+  return { success: true, action: "updated", contentId: movie.id, slug: movie.slug, oldPlayerUrl: movie.videoUrl, newPlayerUrl: playerUrl, historyId, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id) };
+}
+
+export async function undoPublisherPlayer(historyId: string): Promise<{ success: true; action: "restored"; contentId: string; playerUrl: string; siteUrl: string }> {
+  const history = await getPublisherPlayerHistory(historyId);
+  if (!history) throw new PublisherError("HISTORY_NOT_FOUND", 404);
+  if (history.undoneAt) throw new PublisherError("HISTORY_ALREADY_UNDONE", 409);
+  const movie = (await readMovies()).find((item) => item.id === history.contentId);
+  if (!movie) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  if (history.episodeId) {
+    const current = movie.episodes?.find((item) => item.id === history.episodeId);
+    if (!current) throw new PublisherError("EPISODE_NOT_FOUND", 404);
+    if (current.videoUrl !== history.newPlayerUrl) throw new PublisherError("PLAYER_CHANGED_AFTER_HISTORY", 409);
+    const episodes = (movie.episodes ?? []).map((item) => item.id === current.id ? { ...item, videoUrl: history.oldPlayerUrl, updatedAt: new Date().toISOString() } : item);
+    await updateMovie(movie.id, { ...movie, episodes, updatedAt: new Date().toISOString() });
+  } else {
+    if (movie.videoUrl !== history.newPlayerUrl) throw new PublisherError("PLAYER_CHANGED_AFTER_HISTORY", 409);
+    await updateMovie(movie.id, { ...movie, videoUrl: history.oldPlayerUrl, updatedAt: new Date().toISOString() });
+  }
+  if (!await markPublisherPlayerHistoryUndone(historyId)) throw new PublisherError("HISTORY_ALREADY_UNDONE", 409);
+  return { success: true, action: "restored", contentId: movie.id, playerUrl: history.oldPlayerUrl, siteUrl: siteUrl(movie) };
 }
 
 export class PublisherError extends Error {
@@ -212,6 +305,23 @@ function isIdentityMatch(title: string, originalTitle: string, movie: Movie): bo
     (titleScore >= 0.88 && originalScore >= 0.88)
   );
 }
+
+function searchScore(title: string, originalTitle: string, movie: Movie): number {
+  const candidates = [normalizeTitle(movie.title), normalizeTitle(movie.originalTitle ?? "")].filter(Boolean);
+  const titleScore = Math.max(...candidates.map((candidate) => flexibleSimilarity(title, candidate)), 0);
+  const originalScore = originalTitle ? Math.max(...candidates.map((candidate) => flexibleSimilarity(originalTitle, candidate)), 0) : 0;
+  return Math.max(titleScore, originalScore);
+}
+
+function flexibleSimilarity(left: string, right: string): number {
+  if (!left || !right) return 0;
+  if (left === right) return 1;
+  if (left.includes(right) || right.includes(left)) return 0.92;
+  return similarity(left, right);
+}
+
+function siteUrl(movie: Movie): string { return `https://uzdub.com/${movie.type === "SERIAL" ? "serial" : "kino"}/${movie.slug}`; }
+function adminUrl(contentId: string): string { return `https://uzdub.com/admin/kinolar/${contentId}`; }
 
 export function normalizeTitle(value: string): string {
   return value

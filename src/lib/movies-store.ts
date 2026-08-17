@@ -23,6 +23,7 @@ function ensureTable() {
       sql`CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
       sql`DO $$ BEGIN CREATE TABLE ai_office_requests (idempotency_key TEXT PRIMARY KEY, payload_hash TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN ('PENDING','COMPLETED','FAILED')), result JSONB, last_error_code TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()); EXCEPTION WHEN duplicate_table OR unique_violation THEN NULL; END $$`,
       sql`CREATE TABLE IF NOT EXISTS ai_office_publish_approvals (token_hash TEXT PRIMARY KEY, draft_id TEXT NOT NULL, admin_id BIGINT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
+      sql`CREATE TABLE IF NOT EXISTS publisher_player_history (id TEXT PRIMARY KEY, content_id TEXT NOT NULL, episode_id TEXT, season INTEGER, episode INTEGER, old_player_url TEXT NOT NULL, new_player_url TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'telegram_publisher', changed_at TIMESTAMPTZ NOT NULL DEFAULT now(), undone_at TIMESTAMPTZ)`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT NOT NULL DEFAULT 'FREE'`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_telegram_admin_notifications BOOLEAN NOT NULL DEFAULT false`,
@@ -266,6 +267,31 @@ export async function updateMovie(id: string, movie: Movie): Promise<boolean> {
     UPDATE movies SET data = ${JSON.stringify(movie)}::jsonb, slug = ${movie.slug}, created_at = created_at
     WHERE id = ${id} RETURNING id
   `) as unknown[];
+  return rows.length > 0;
+}
+
+export type PublisherPlayerHistory = {
+  id: string; contentId: string; episodeId?: string; season?: number; episode?: number;
+  oldPlayerUrl: string; newPlayerUrl: string; source: string; changedAt: string; undoneAt?: string;
+};
+
+export async function createPublisherPlayerHistory(input: {
+  id: string; contentId: string; episodeId?: string; season?: number; episode?: number;
+  oldPlayerUrl: string; newPlayerUrl: string;
+}): Promise<void> {
+  await ensureTable(); const sql = db();
+  await sql`INSERT INTO publisher_player_history (id,content_id,episode_id,season,episode,old_player_url,new_player_url,source) VALUES (${input.id},${input.contentId},${input.episodeId ?? null},${input.season ?? null},${input.episode ?? null},${input.oldPlayerUrl},${input.newPlayerUrl},'telegram_publisher')`;
+}
+
+export async function getPublisherPlayerHistory(id: string): Promise<PublisherPlayerHistory | undefined> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`SELECT id,content_id AS "contentId",episode_id AS "episodeId",season,episode,old_player_url AS "oldPlayerUrl",new_player_url AS "newPlayerUrl",source,changed_at AS "changedAt",undone_at AS "undoneAt" FROM publisher_player_history WHERE id=${id} LIMIT 1` as PublisherPlayerHistory[];
+  return rows[0];
+}
+
+export async function markPublisherPlayerHistoryUndone(id: string): Promise<boolean> {
+  await ensureTable(); const sql = db();
+  const rows = await sql`UPDATE publisher_player_history SET undone_at=now() WHERE id=${id} AND undone_at IS NULL RETURNING id` as unknown[];
   return rows.length > 0;
 }
 

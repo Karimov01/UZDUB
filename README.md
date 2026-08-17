@@ -46,7 +46,13 @@ o'rnating. Token faqat quyidagi private endpointlarda
 - `POST /api/publisher/create` — AI metadata bilan yangi `DRAFT` yaratish;
 - `POST /api/publisher/serial/episode` — qismni `(season, episode)` bo'yicha create/update qilish;
 - `POST /api/publisher/movie/video` — mavjud kinoning player URL'ini yangilash.
+- `POST /api/publisher/search` — nom bo'yicha fuzzy kino/serial qidirish;
+- `POST /api/publisher/inspect` — joriy kino yoki qism playerini ko'rish;
+- `POST /api/publisher/undo` — player history orqali oldingi URL'ni tiklash.
 
 Video endpointlari `moverEmbedUrl`, `publicUrl`, `moverWatchUrl` tartibida player
 manzilini tanlaydi. Barcha URL'lar HTTPS bo'lishi shart. Bu tokenni
 `NEXT_PUBLIC_*` o'zgaruvchisiga yoki client-side kodga joylamang.
+Player almashtirishlari `publisher_player_history` audit jadvalida
+`telegram_publisher` manbasi bilan saqlanadi. Bir xil URL qayta yuborilsa update
+va history yozuvi yaratilmaydi.
