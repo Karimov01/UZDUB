@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Private Publisher API
+
+Telegram Video Uploader kabi server-side integratsiyalar uchun `.env.local` yoki
+Vercel Environment Variables ichida kamida 32 belgili `PUBLISHER_API_TOKEN`
+o'rnating. Token faqat quyidagi private endpointlarda
+`Authorization: Bearer <token>` sarlavhasi orqali qabul qilinadi:
+
+- `POST /api/publisher/find` — kino yoki serialni nom, asl nom va yil bilan topish;
+- `POST /api/publisher/create` — AI metadata bilan yangi `DRAFT` yaratish;
+- `POST /api/publisher/serial/episode` — qismni `(season, episode)` bo'yicha create/update qilish;
+- `POST /api/publisher/movie/video` — mavjud kinoning player URL'ini yangilash.
+
+Video endpointlari `moverEmbedUrl`, `publicUrl`, `moverWatchUrl` tartibida player
+manzilini tanlaydi. Barcha URL'lar HTTPS bo'lishi shart. Bu tokenni
+`NEXT_PUBLIC_*` o'zgaruvchisiga yoki client-side kodga joylamang.
