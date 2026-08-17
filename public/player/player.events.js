@@ -109,7 +109,6 @@ class EventManager {
         // barcha asosiy holatlarida spinnerni aniq boshqaramiz.
         this.on(v, 'loadstart', () => this.ui.showSpinner());
         this.on(v, 'stalled', () => this.ui.showSpinner());
-        this.on(v, 'seeking', () => this.ui.showSpinner());
         this.on(v, 'waiting', () => this.ui.showSpinner());
         this.on(v, 'playing', () => { this.ui.hideSpinner(); this.ui.hideError(); });
         this.on(v, 'loadeddata', () => this.ui.hideSpinner());

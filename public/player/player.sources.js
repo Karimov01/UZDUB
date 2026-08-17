@@ -133,6 +133,10 @@ class SourceManager {
 
         this.currentKind = "embed";
 
+        // Cross-origin iframe yuklanish holatini video eventlari orqali
+        // bilib bo'lmaydi. Avvalgi MP4/HLS loaderi ko'rinib qolmasin.
+        this.player.ui.hideSpinner();
+
         const url = this.buildEmbedUrl(src, type);
 
         const frame = this.player.ui.elements.embed;
