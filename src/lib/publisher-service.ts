@@ -55,6 +55,7 @@ export async function inspectPublisherContent(input: {
 }): Promise<{
   contentId: string; type: "movie" | "serial"; title: string; originalTitle: string;
   year?: number; slug: string; siteUrl: string; adminUrl: string; playerUrl?: string;
+  status: string; posterUrl?: string; description?: string;
   episode?: { id: string; season: number; episode: number; title: string; playerUrl?: string };
 }> {
   const movie = (await readMovies()).find((item) => item.id === input.contentId);
@@ -68,12 +69,14 @@ export async function inspectPublisherContent(input: {
     return {
       contentId: movie.id, type, title: movie.title, originalTitle: movie.originalTitle ?? "",
       year: movie.year, slug: movie.slug, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id),
+      status: movie.status, posterUrl: movie.posterUrl, description: movie.description,
       ...(episode ? { episode: { id: episode.id, season, episode: episode.episode, title: episode.title, playerUrl: episode.videoUrl } } : {}),
     };
   }
   return {
     contentId: movie.id, type, title: movie.title, originalTitle: movie.originalTitle ?? "",
     year: movie.year, slug: movie.slug, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id),
+    status: movie.status, posterUrl: movie.posterUrl, description: movie.description,
     playerUrl: movie.videoUrl,
   };
 }
@@ -259,6 +262,63 @@ export async function undoPublisherPlayer(historyId: string): Promise<{ success:
   }
   if (!await markPublisherPlayerHistoryUndone(historyId)) throw new PublisherError("HISTORY_ALREADY_UNDONE", 409);
   return { success: true, action: "restored", contentId: movie.id, playerUrl: history.oldPlayerUrl, siteUrl: siteUrl(movie) };
+}
+
+export async function publishPublisherContent(contentId: string): Promise<{
+  success: true; action: "published" | "unchanged"; contentId: string; title: string;
+  year?: number; siteUrl: string; adminUrl: string;
+}> {
+  const movie = (await readMovies()).find((item) => item.id === contentId);
+  if (!movie) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  if (movie.status === "ARCHIVED") throw new PublisherError("ARCHIVED_CONTENT_CANNOT_PUBLISH", 409);
+  if (movie.status === "PUBLISHED") return { success: true, action: "unchanged", contentId, title: movie.title, year: movie.year, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id) };
+  const now = new Date().toISOString();
+  await updateMovie(movie.id, { ...movie, status: "PUBLISHED", publishedAt: movie.publishedAt ?? now, updatedAt: now });
+  return { success: true, action: "published", contentId, title: movie.title, year: movie.year, siteUrl: siteUrl(movie), adminUrl: adminUrl(movie.id) };
+}
+
+export async function editPublisherDraft(input: {
+  contentId: string; title?: string; originalTitle?: string; year?: number;
+  description?: string; posterUrl?: string;
+}): Promise<Awaited<ReturnType<typeof inspectPublisherContent>>> {
+  const movie = (await readMovies()).find((item) => item.id === input.contentId);
+  if (!movie) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  if (movie.status !== "DRAFT") throw new PublisherError("DRAFT_REQUIRED", 409);
+  const next = { ...movie, updatedAt: new Date().toISOString() };
+  if (input.title !== undefined) next.title = input.title;
+  if (input.originalTitle !== undefined) next.originalTitle = input.originalTitle;
+  if (input.year !== undefined) next.year = input.year;
+  if (input.description !== undefined) next.description = input.description;
+  if (input.posterUrl !== undefined) next.posterUrl = input.posterUrl;
+  await updateMovie(movie.id, next);
+  return inspectPublisherContent({ contentId: movie.id });
+}
+
+export async function refillPublisherAi(input: { contentId: string; preserveFields?: string[] }): Promise<Awaited<ReturnType<typeof inspectPublisherContent>>> {
+  const movie = (await readMovies()).find((item) => item.id === input.contentId);
+  if (!movie) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  if (movie.status !== "DRAFT") throw new PublisherError("DRAFT_REQUIRED", 409);
+  if (!movie.title || !movie.originalTitle || !movie.year) throw new PublisherError("IDENTITY_FIELDS_REQUIRED", 400);
+  let filled;
+  try { filled = await fillMovieMetadata({ title: movie.title, originalTitle: movie.originalTitle, year: movie.year, type: movie.type === "SERIAL" ? "SERIAL" : "MOVIE" }); }
+  catch { throw new PublisherError("AI_ENRICHMENT_FAILED", 502); }
+  const preserve = new Set(input.preserveFields ?? []);
+  const next: Movie = {
+    ...movie,
+    description: preserve.has("description") ? movie.description : filled.description,
+    shortDesc: preserve.has("shortDesc") ? movie.shortDesc : filled.shortDesc,
+    posterUrl: preserve.has("posterUrl") ? movie.posterUrl : filled.posterUrl,
+    backdropUrl: preserve.has("backdropUrl") ? movie.backdropUrl : filled.backdropUrl,
+    duration: preserve.has("duration") ? movie.duration : filled.duration,
+    country: preserve.has("country") ? movie.country : filled.country,
+    language: preserve.has("language") ? movie.language : filled.language,
+    dubbing: preserve.has("dubbing") ? movie.dubbing : filled.dubbing,
+    imdbRating: preserve.has("imdbRating") ? movie.imdbRating : filled.imdbRating,
+    genres: preserve.has("genres") ? movie.genres : mapGenres(filled.genres),
+    updatedAt: new Date().toISOString(),
+  };
+  await updateMovie(movie.id, next);
+  return inspectPublisherContent({ contentId: movie.id });
 }
 
 export class PublisherError extends Error {
