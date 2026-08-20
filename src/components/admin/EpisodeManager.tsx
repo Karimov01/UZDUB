@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, Trash2, Sparkles, Loader2, Film, Layers3, CirclePlus, Eye } from "lucide-react";
 
-export interface EpisodeForm { id?: string; season: string; episode: string; title: string; description: string; videoUrl: string; duration: string; }
+export interface EpisodeForm { id?: string; season: string; episode: string; title: string; description: string; videoUrl: string; duration: string; aiProcessedAt?: string; }
 export function emptyEpisode(nextNum: number, season = 1): EpisodeForm { return { season: String(season), episode: String(nextNum), title: "", description: "", videoUrl: "", duration: "" }; }
 
 function sortEpisodes(episodes: EpisodeForm[]) { return [...episodes].sort((a, b) => Number(a.season) - Number(b.season) || Number(a.episode) - Number(b.episode)); }
@@ -21,7 +21,7 @@ export default function EpisodeManager({ episodes, onChange, serialTitle, origin
   const addToSeason = (season: number, episode?: number) => { const next = episode ?? Math.max(0, ...episodes.filter((item) => (Number(item.season) || 1) === season).map((item) => Number(item.episode) || 0)) + 1; setSelectedSeason(season); setError(""); onChange([...episodes, emptyEpisode(next, season)]); };
   const addNewSeason = () => addToSeason(Math.max(0, ...seasons) + 1, 1);
   const remove = (index: number, episode: EpisodeForm) => { if (!window.confirm(`${episode.season}-fasl ${episode.episode}-qismni o'chirmoqchimisiz?`)) return; onChange(episodes.filter((_, i) => i !== index)); };
-  const aiFill = async (index: number) => { setAiIndex(index); setError(""); try { const episode = episodes[index]; const response = await fetch("/api/ai-fill-episode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ serialTitle, originalTitle, season: episode.season, episode: episode.episode, title: episode.title }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error || "AI xatosi"); onChange(episodes.map((item, i) => i === index ? { ...item, title: json.data.title || item.title, description: json.data.description || item.description } : item)); } catch (cause) { setError(cause instanceof Error ? cause.message : "AI xatosi"); } finally { setAiIndex(null); } };
+  const aiFill = async (index: number) => { setAiIndex(index); setError(""); try { const episode = episodes[index]; const response = await fetch("/api/ai-fill-episode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ serialTitle, originalTitle, season: episode.season, episode: episode.episode, title: episode.title }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error || "AI xatosi"); onChange(episodes.map((item, i) => i === index ? { ...item, title: json.data.title || item.title, description: json.data.description || item.description, aiProcessedAt: json.data.aiProcessedAt || new Date().toISOString() } : item)); } catch (cause) { setError(cause instanceof Error ? cause.message : "AI xatosi"); } finally { setAiIndex(null); } };
   const inputClass = "w-full px-2.5 py-2 rounded-lg text-sm text-white outline-none";
   const inputStyle = { background: "var(--bg-primary)", border: "1px solid var(--border)" };
 

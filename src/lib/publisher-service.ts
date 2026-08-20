@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { ContentType, Episode, Movie } from "@/types/movie";
 import { fillMovieMetadata } from "@/lib/ai-movie-fill";
+import { fillEpisodeMetadata } from "@/lib/ai-episode-fill";
 import {
   addMovie,
   createPublisherPlayerHistory,
@@ -223,6 +224,95 @@ export async function upsertPublisherEpisode(input: {
     siteUrl: siteUrl(serial),
     adminUrl: adminUrl(serial.id),
   };
+}
+
+export type PublisherEpisodeIssue = {
+  episodeId: string; season: number; episode: number; playerUrl?: string;
+  duration?: number; aiProcessed: boolean; missingPlayer: boolean;
+  missingDuration: boolean; missingAi: boolean; missingRequiredFields: string[];
+};
+
+export type PublisherSerialHealth = {
+  contentId: string; title: string; originalTitle: string; year?: number;
+  siteUrl: string; adminUrl: string; totalEpisodes: number;
+  playerOk: number; durationOk: number; aiOk: number; issues: PublisherEpisodeIssue[];
+};
+
+export function episodeAiProcessed(episode: Episode): boolean {
+  if (episode.aiProcessedAt) return true;
+  const defaultTitle = `${episode.episode}-qism`;
+  return Boolean(episode.description?.trim() && episode.title?.trim() && episode.title.trim() !== defaultTitle);
+}
+
+function episodeIssue(episode: Episode): PublisherEpisodeIssue {
+  const missingPlayer = !episode.videoUrl?.trim();
+  const missingDuration = !Number.isInteger(episode.duration) || (episode.duration ?? 0) <= 0;
+  const missingAi = !episodeAiProcessed(episode);
+  const missingRequiredFields: string[] = [];
+  if (!episode.title?.trim()) missingRequiredFields.push("title");
+  if (!episode.description?.trim()) missingRequiredFields.push("description");
+  return {
+    episodeId: episode.id, season: episode.season, episode: episode.episode,
+    playerUrl: episode.videoUrl, duration: episode.duration, aiProcessed: !missingAi,
+    missingPlayer, missingDuration, missingAi, missingRequiredFields,
+  };
+}
+
+export async function inspectPublisherSerialHealth(contentId: string): Promise<PublisherSerialHealth> {
+  const serial = (await readMovies()).find((item) => item.id === contentId);
+  if (!serial) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  if (serial.type !== "SERIAL") throw new PublisherError("CONTENT_TYPE_MISMATCH", 409);
+  const episodes = [...(serial.episodes ?? [])].sort((a, b) => a.season - b.season || a.episode - b.episode);
+  const all = episodes.map(episodeIssue);
+  return {
+    contentId: serial.id, title: serial.title, originalTitle: serial.originalTitle ?? "",
+    year: serial.year, siteUrl: siteUrl(serial), adminUrl: adminUrl(serial.id),
+    totalEpisodes: all.length,
+    playerOk: all.filter((item) => !item.missingPlayer).length,
+    durationOk: all.filter((item) => !item.missingDuration).length,
+    aiOk: all.filter((item) => !item.missingAi).length,
+    // Return every episode so Telegram can render a complete, paginated audit.
+    // Each row carries deterministic missing flags and doubles as the issue model.
+    issues: all,
+  };
+}
+
+export async function repairPublisherSerialEpisode(input: {
+  contentId: string; episodeId: string; repairAi?: boolean; duration?: number; dryRun?: boolean;
+}): Promise<{
+  success: true; action: "updated" | "unchanged" | "dry_run"; episodeId: string;
+  episode: number; aiRepaired: boolean; durationRepaired: boolean; playerUnchanged: boolean;
+  issue: PublisherEpisodeIssue;
+}> {
+  const serial = (await readMovies()).find((item) => item.id === input.contentId);
+  if (!serial) throw new PublisherError("CONTENT_NOT_FOUND", 404);
+  if (serial.type !== "SERIAL") throw new PublisherError("CONTENT_TYPE_MISMATCH", 409);
+  const current = serial.episodes?.find((item) => item.id === input.episodeId);
+  if (!current) throw new PublisherError("EPISODE_NOT_FOUND", 404);
+  const before = episodeIssue(current); const oldPlayer = current.videoUrl;
+  const shouldAi = Boolean(input.repairAi && before.missingAi);
+  const validDuration = Number.isInteger(input.duration) && (input.duration ?? 0) > 0 ? input.duration : undefined;
+  const shouldDuration = Boolean(before.missingDuration && validDuration);
+  if (input.dryRun) return { success: true, action: "dry_run", episodeId: current.id, episode: current.episode, aiRepaired: shouldAi, durationRepaired: shouldDuration, playerUnchanged: true, issue: before };
+  let next: Episode = { ...current };
+  if (shouldAi) {
+    let filled;
+    try { filled = await fillEpisodeMetadata({ serialTitle: serial.title, originalTitle: serial.originalTitle, title: current.title, season: current.season, episode: current.episode }); }
+    catch { throw new PublisherError("EPISODE_AI_FAILED", 502); }
+    next = { ...next, title: filled.title, description: filled.description, aiProcessedAt: filled.aiProcessedAt };
+  }
+  if (shouldDuration) next = { ...next, duration: validDuration };
+  if (!shouldAi && !shouldDuration) return { success: true, action: "unchanged", episodeId: current.id, episode: current.episode, aiRepaired: false, durationRepaired: false, playerUnchanged: true, issue: before };
+  next = { ...next, updatedAt: new Date().toISOString() };
+  const episodes = (serial.episodes ?? []).map((item) => item.id === current.id ? next : item);
+  await updateMovie(serial.id, { ...serial, episodes, updatedAt: next.updatedAt });
+  const savedSerial = (await readMovies()).find((item) => item.id === serial.id);
+  const saved = savedSerial?.episodes?.find((item) => item.id === current.id);
+  if (!saved || saved.videoUrl !== oldPlayer) throw new PublisherError("PLAYER_PROTECTION_FAILED", 500);
+  const after = episodeIssue(saved);
+  if (shouldAi && after.missingAi) throw new PublisherError("EPISODE_AI_VERIFY_FAILED", 502);
+  if (shouldDuration && after.missingDuration) throw new PublisherError("EPISODE_DURATION_VERIFY_FAILED", 500);
+  return { success: true, action: "updated", episodeId: saved.id, episode: saved.episode, aiRepaired: shouldAi, durationRepaired: shouldDuration, playerUnchanged: true, issue: after };
 }
 
 export async function updatePublisherMovieVideo(input: {

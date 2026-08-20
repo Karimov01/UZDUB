@@ -65,6 +65,7 @@ export const MovieInput = z.object({
         description: z.string().trim().max(3000).optional().default(""),
         videoUrl: z.string().trim().max(2000).optional().default(""),
         duration: z.coerce.number().int().min(0).max(100000).optional(),
+        aiProcessedAt: z.string().datetime().optional(),
       })
     )
     .max(1000)
@@ -93,6 +94,7 @@ export function mapEpisodes(input: MovieInputData["episodes"], movieId: string, 
     description: e.description || undefined,
     videoUrl: e.videoUrl || undefined,
     duration: e.duration,
+    aiProcessedAt: e.aiProcessedAt || existingById.get(e.id ?? "")?.aiProcessedAt,
     viewCount: e.id ? existingById.get(e.id)?.viewCount ?? 0 : 0,
     createdAt: e.id ? existingById.get(e.id)?.createdAt : new Date().toISOString(),
     updatedAt: new Date().toISOString(),

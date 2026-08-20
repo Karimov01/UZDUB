@@ -40,6 +40,7 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
       description: e.description ?? "",
       videoUrl: e.videoUrl ?? "",
       duration: e.duration ? String(e.duration) : "",
+      aiProcessedAt: e.aiProcessedAt,
     })),
   });
   const [saving, setSaving] = useState(false);
@@ -84,6 +85,7 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
                 description: e.description,
                 videoUrl: e.videoUrl,
                 duration: e.duration ? Number(e.duration) : undefined,
+                aiProcessedAt: e.aiProcessedAt,
               }))
             : [],
         }),

@@ -37,6 +37,7 @@ export interface Episode {
   previewUrl?: string;
   videoUrl?: string;
   duration?: number;
+  aiProcessedAt?: string;
   viewCount: number;
   airDate?: string;
   createdAt?: string;
