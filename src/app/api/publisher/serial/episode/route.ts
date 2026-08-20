@@ -13,6 +13,7 @@ export const runtime = "nodejs";
 const Input = publisherVideoInput.extend({
   season: z.coerce.number().int().min(1).max(100).optional().default(1),
   episode: z.coerce.number().int().min(1).max(1000),
+  duration: z.coerce.number().int().min(1).max(100000).optional(),
 });
 
 export async function POST(request: Request) {

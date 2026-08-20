@@ -172,10 +172,11 @@ export async function upsertPublisherEpisode(input: {
   contentId: string;
   season?: number;
   episode: number;
+  duration?: number;
   moverWatchUrl?: string | null;
   moverEmbedUrl?: string | null;
   publicUrl?: string | null;
-}): Promise<{ success: true; action: "created" | "updated" | "unchanged"; episode: number; season: number; slug: string; contentId: string; episodeId: string; oldPlayerUrl?: string; newPlayerUrl: string; historyId?: string; siteUrl: string; adminUrl: string }> {
+}): Promise<{ success: true; action: "created" | "updated" | "unchanged"; episode: number; season: number; slug: string; contentId: string; episodeId: string; oldPlayerUrl?: string; newPlayerUrl: string; historyId?: string; siteUrl: string; adminUrl: string; aiRepaired?: boolean; durationRepaired?: boolean; finalized?: boolean }> {
   const movies = await readMovies();
   const serial = movies.find((movie) => movie.id === input.contentId);
   if (!serial) throw new PublisherError("CONTENT_NOT_FOUND", 404);
@@ -187,7 +188,12 @@ export async function upsertPublisherEpisode(input: {
     (item) => item.season === season && item.episode === input.episode,
   );
   if (existing?.videoUrl === playerUrl) {
-    return { success: true, action: "unchanged", episode: input.episode, season, slug: serial.slug, contentId: serial.id, episodeId: existing.id, oldPlayerUrl: existing.videoUrl, newPlayerUrl: playerUrl, siteUrl: siteUrl(serial), adminUrl: adminUrl(serial.id) };
+    // A previous CREATE may have persisted the episode before AI/duration failed.
+    // Finalizing the same persisted ID makes retry/restart idempotent and never creates a duplicate.
+    console.info("uzdub_episode_finalize_started", { contentId: serial.id, episodeId: existing.id, episode: input.episode });
+    const finalized = await repairPublisherSerialEpisode({ contentId: serial.id, episodeId: existing.id, repairAi: true, duration: input.duration });
+    console.info("uzdub_episode_finalize_verified", { contentId: serial.id, episodeId: existing.id, aiRepaired: finalized.aiRepaired, durationRepaired: finalized.durationRepaired });
+    return { success: true, action: "unchanged", episode: input.episode, season, slug: serial.slug, contentId: serial.id, episodeId: existing.id, oldPlayerUrl: existing.videoUrl, newPlayerUrl: playerUrl, siteUrl: siteUrl(serial), adminUrl: adminUrl(serial.id), aiRepaired: finalized.aiRepaired, durationRepaired: finalized.durationRepaired, finalized: true };
   }
   const now = new Date().toISOString();
   const episode: Episode = {
@@ -206,9 +212,21 @@ export async function upsertPublisherEpisode(input: {
     ? (serial.episodes ?? []).map((item) => item.id === existing.id ? episode : item)
     : [...(serial.episodes ?? []), episode];
   await updateMovie(serial.id, { ...serial, episodes, updatedAt: now });
+  console.info("uzdub_episode_created", { contentId: serial.id, episodeId: episode.id, episode: input.episode, action: existing ? "updated" : "created" });
   const historyId = existing?.videoUrl ? randomUUID() : undefined;
   if (historyId && existing?.videoUrl) {
     await createPublisherPlayerHistory({ id: historyId, contentId: serial.id, episodeId: episode.id, season, episode: input.episode, oldPlayerUrl: existing.videoUrl, newPlayerUrl: playerUrl });
+  }
+  let finalized: Awaited<ReturnType<typeof repairPublisherSerialEpisode>> | undefined;
+  if (!existing) {
+    console.info("uzdub_episode_finalize_started", { contentId: serial.id, episodeId: episode.id, episode: input.episode });
+    try {
+      finalized = await repairPublisherSerialEpisode({ contentId: serial.id, episodeId: episode.id, repairAi: true, duration: input.duration });
+      console.info("uzdub_episode_finalize_verified", { contentId: serial.id, episodeId: episode.id, aiRepaired: finalized.aiRepaired, durationRepaired: finalized.durationRepaired });
+    } catch (error) {
+      console.error("uzdub_episode_finalize_failed", { contentId: serial.id, episodeId: episode.id, episode: input.episode });
+      throw error;
+    }
   }
   return {
     success: true,
@@ -223,6 +241,9 @@ export async function upsertPublisherEpisode(input: {
     historyId,
     siteUrl: siteUrl(serial),
     adminUrl: adminUrl(serial.id),
+    aiRepaired: finalized?.aiRepaired,
+    durationRepaired: finalized?.durationRepaired,
+    finalized: Boolean(finalized),
   };
 }
 
@@ -296,12 +317,17 @@ export async function repairPublisherSerialEpisode(input: {
   if (input.dryRun) return { success: true, action: "dry_run", episodeId: current.id, episode: current.episode, aiRepaired: shouldAi, durationRepaired: shouldDuration, playerUnchanged: true, issue: before };
   let next: Episode = { ...current };
   if (shouldAi) {
+    console.info("uzdub_episode_ai_started", { contentId: serial.id, episodeId: current.id, episode: current.episode });
     let filled;
     try { filled = await fillEpisodeMetadata({ serialTitle: serial.title, originalTitle: serial.originalTitle, title: current.title, season: current.season, episode: current.episode }); }
     catch { throw new PublisherError("EPISODE_AI_FAILED", 502); }
     next = { ...next, title: filled.title, description: filled.description, aiProcessedAt: filled.aiProcessedAt };
+    console.info("uzdub_episode_ai_done", { contentId: serial.id, episodeId: current.id, episode: current.episode });
   }
-  if (shouldDuration) next = { ...next, duration: validDuration };
+  if (shouldDuration) {
+    next = { ...next, duration: validDuration };
+    console.info("uzdub_episode_duration_set", { contentId: serial.id, episodeId: current.id, episode: current.episode, duration: validDuration });
+  }
   if (!shouldAi && !shouldDuration) return { success: true, action: "unchanged", episodeId: current.id, episode: current.episode, aiRepaired: false, durationRepaired: false, playerUnchanged: true, issue: before };
   next = { ...next, updatedAt: new Date().toISOString() };
   const episodes = (serial.episodes ?? []).map((item) => item.id === current.id ? next : item);
