@@ -111,7 +111,7 @@ export default function Footer() {
           style={{ borderTop: "1px solid var(--border)" }}
         >
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            © 2025 UZDUB Play. Barcha huquqlar himoyalangan.
+            © 2026 UZDUB Play. Barcha huquqlar himoyalangan.
           </p>
           <div className="flex items-center gap-3"><p className="text-xs" style={{ color: "var(--text-muted)" }}>O&apos;zbekiston, Toshkent</p><LiveInternetCounter /></div>
         </div>
