@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import JsonLd from "@/components/seo/JsonLd";
 import { Analytics } from "@vercel/analytics/next";
-import YandexAutoplacement from "@/components/ads/YandexAutoplacement";
 import { APP_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_LOCALE } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body-next", display: "swap" });
@@ -40,5 +40,5 @@ const siteJsonLd = [
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout><YandexAutoplacement /><Analytics /></body></html>;
+  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><Script id="yandex-rtb-queue" strategy="beforeInteractive">{"window.yaContextCb = window.yaContextCb || [];"}</Script><Script id="yandex-context" src="https://yandex.ru/ads/system/context.js" strategy="afterInteractive" /><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout><Analytics /></body></html>;
 }
