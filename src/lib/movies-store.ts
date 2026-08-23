@@ -347,10 +347,33 @@ export async function claimAiOfficeRequest(idempotencyKey: string, hash: string)
 export async function completeAiOfficeRequest(idempotencyKey: string, result: { id: string; status: "DRAFT"; url?: string }): Promise<void> { await ensureTable(); const sql = db(); await sql`UPDATE ai_office_requests SET state = 'COMPLETED', result = ${JSON.stringify(result)}::jsonb, updated_at = now() WHERE idempotency_key = ${idempotencyKey} AND state = 'PENDING'`; }
 export async function failAiOfficeRequest(idempotencyKey: string, code: string): Promise<void> { await ensureTable(); const sql = db(); await sql`UPDATE ai_office_requests SET state = 'FAILED', last_error_code = ${code}, updated_at = now() WHERE idempotency_key = ${idempotencyKey} AND state = 'PENDING'`; }
 
-export async function incrementEpisodeView(movieId: string, episodeId: string): Promise<number | null> {
-  const movie = await getMovie(movieId);
-  if (!movie?.episodes) return null;
-  const episodes = movie.episodes.map((episode) => episode.id === episodeId ? { ...episode, viewCount: (episode.viewCount ?? 0) + 1 } : episode);
-  await updateMovie(movieId, { ...movie, episodes });
-  return episodes.find((episode) => episode.id === episodeId)?.viewCount ?? null;
+export async function incrementEpisodeView(movieId: string, episodeId: string): Promise<{ contentCount: number; episodeCount: number } | null> {
+  await ensureTable();
+  const sql = db();
+  const rows = await sql`
+    UPDATE movies
+    SET data = jsonb_set(
+      jsonb_set(
+        data,
+        '{viewCount}',
+        (COALESCE((data->>'viewCount')::int, 0) + 1)::text::jsonb
+      ),
+      '{episodes}',
+      COALESCE((
+        SELECT jsonb_agg(
+          CASE WHEN episode->>'id' = ${episodeId}
+            THEN jsonb_set(episode, '{viewCount}', (COALESCE((episode->>'viewCount')::int, 0) + 1)::text::jsonb)
+            ELSE episode
+          END
+        )
+        FROM jsonb_array_elements(COALESCE(data->'episodes', '[]'::jsonb)) AS episode
+      ), '[]'::jsonb)
+    )
+    WHERE id = ${movieId}
+      AND EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(data->'episodes', '[]'::jsonb)) AS episode WHERE episode->>'id' = ${episodeId})
+    RETURNING
+      (data->>'viewCount')::int AS "contentCount",
+      (SELECT (episode->>'viewCount')::int FROM jsonb_array_elements(data->'episodes') AS episode WHERE episode->>'id' = ${episodeId} LIMIT 1) AS "episodeCount"
+  ` as { contentCount: number; episodeCount: number }[];
+  return rows[0] ?? null;
 }

@@ -38,10 +38,19 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   const goToEpisode = (episode: Episode) => router.push(`/serial/${serial.slug}/qism/${episode.season}/${episode.episode}`);
 
   useEffect(() => {
-    const key = `uzdub_episode_viewed_${currentEpisode.id}`;
-    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { return; }
-    fetch(`/api/public/episode-view/${serial.id}/${currentEpisode.id}`, { method: "POST" }).then((response) => response.json()).then((data) => { if (typeof data.count === "number") setEpisodeViews(data.count); }).catch(() => {});
-  }, [currentEpisode.id, serial.id]);
+    setEpisodeViews(currentEpisode.viewCount ?? 0);
+    const key = `uzdub_watch_page_viewed_${serial.id}_${currentEpisode.id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // sessionStorage ishlamasa ham ushbu ochilishda faqat bitta so'rov yuboriladi.
+    }
+    void fetch(`/api/public/episode-view/${encodeURIComponent(serial.id)}/${encodeURIComponent(currentEpisode.id)}`, { method: "POST", keepalive: true })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => { if (typeof data?.count === "number") setEpisodeViews(data.count); })
+      .catch(() => {});
+  }, [currentEpisode.id, currentEpisode.viewCount, serial.id]);
 
   useEffect(() => { setNextCountdown(null); }, [currentEpisode.id]);
   useEffect(() => {

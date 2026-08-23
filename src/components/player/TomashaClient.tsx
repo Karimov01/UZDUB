@@ -2,19 +2,37 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ChevronLeft, Sparkles, VideoOff } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
 import WatchRecommendations from "@/components/player/WatchRecommendations";
 import EngagementPanel from "@/components/engagement/EngagementPanel";
 import TelegramChannelButton from "@/components/shared/TelegramChannelButton";
+import { formatViewCount } from "@/lib/utils";
 
 function formatDuration(minutes?: number) { if (!minutes) return undefined; return minutes >= 60 ? `${Math.floor(minutes / 60)} soat ${minutes % 60 ? `${minutes % 60} daqiqa` : ""}`.trim() : `${minutes} daqiqa`; }
-function formatViews(count?: number) { return new Intl.NumberFormat("uz-UZ", { notation: "compact", maximumFractionDigits: 1 }).format(count ?? 0); }
 
 export default function TomashaClient({ movie, recommendations = [] }: { movie: Movie; recommendations?: Movie[] }) {
-  const metadata = [movie.year, formatDuration(movie.duration), `${formatViews(movie.viewCount)} marta ko'rildi`].filter(Boolean);
+  const [views, setViews] = useState(movie.viewCount ?? 0);
+  const metadata = [movie.year, formatDuration(movie.duration), `${formatViewCount(views)} marta ko'rildi`].filter(Boolean);
   const poster = movie.posterUrl || movie.backdropUrl;
+
+  // Tomosha URL'iga birinchi kirish kontentning bitta haqiqiy ko'rishi hisoblanadi.
+  // Shu kalit bir sessiyada yangilash yoki navigatsiya sababli sonni sun'iy oshirmaydi.
+  useEffect(() => {
+    const key = `uzdub_watch_page_viewed_${movie.id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // sessionStorage bloklangan bo'lsa, joriy komponent ochilishida bitta so'rov yuboriladi.
+    }
+    void fetch(`/api/public/view/${encodeURIComponent(movie.id)}`, { method: "POST", keepalive: true })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => { if (typeof data?.count === "number") setViews(data.count); })
+      .catch(() => {});
+  }, [movie.id]);
 
   return <div className="min-h-screen" style={{ background: "#000" }}>
     <div className="flex items-center gap-3 px-4 py-3" style={{ background: "#0a0a0f", borderBottom: "1px solid var(--border)" }}><Link href={`/kino/${movie.slug}`} className="flex items-center gap-2 text-white transition-colors hover:text-gray-300"><ChevronLeft className="h-5 w-5" /><span className="text-sm font-medium">{movie.title}</span></Link><span className="hidden text-xs sm:block" style={{ color: "var(--text-muted)" }}>Premium tomosha rejimi</span></div>

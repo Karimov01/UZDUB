@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Play, Plus, Heart, Star, Clock, Eye, Globe, Calendar, Film, Mic, Check } from "lucide-react";
 import { formatDuration, formatViewCount } from "@/lib/utils";
@@ -18,28 +17,10 @@ import type { Movie } from "@/types/movie";
 export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie; similarMovies?: Movie[] }) {
   const similar = similarMovies.slice(0, 6);
 
-  const [views, setViews] = useState(movie.viewCount ?? 0);
   const fav = useSavedList("favorites");
   const later = useSavedList("watchLater");
   const isFav = fav.has(movie.id);
   const isLater = later.has(movie.id);
-
-  // Ko'rishlar: sessiya davomida bir marta +1
-  useEffect(() => {
-    const k = `uzdub_viewed_${movie.id}`;
-    try {
-      if (sessionStorage.getItem(k)) return;
-      sessionStorage.setItem(k, "1");
-    } catch {
-      /* ignore */
-    }
-    fetch(`/api/public/view/${movie.id}`, { method: "POST" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (typeof d.count === "number") setViews(d.count);
-      })
-      .catch(() => {});
-  }, [movie.id]);
 
   return (
     <div style={{ background: "var(--bg-primary)" }}>
@@ -94,7 +75,7 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
               )}
               <div className="flex items-center gap-1 text-gray-400 text-sm">
                 <Eye className="h-4 w-4" />
-                {formatViewCount(views)}{" "}ko&apos;rildi
+                {formatViewCount(movie.viewCount ?? 0)}{" "}ko&apos;rildi
               </div>
             </motion.div>
 
