@@ -8,7 +8,6 @@ import LatestEpisodeHomeCard from "@/components/home/LatestEpisodeHomeCard";
 import HorizontalScroller from "@/components/home/HorizontalScroller";
 import TrendingSection from "@/components/home/TrendingSection";
 import { HeroSkeleton, MovieCardSkeleton } from "@/components/ui/Skeleton";
-import YandexAd from "@/components/ads/YandexAd";
 import { getHomePageData } from "@/lib/movies";
 
 export const revalidate = 600;
@@ -17,7 +16,6 @@ export const metadata: Metadata = { title: "O'zbek tilidagi kino va seriallar", 
 export default async function HomePage() {
   const { featured, mostViewed, trending, serials, newest, latestEpisodes } = await getHomePageData();
   return <div style={{ background: "var(--bg-primary)" }}>
-    <YandexAd blockId="R-A-19801166-12" />
     <Suspense fallback={<HeroSkeleton />}><HeroBanner movies={featured} /></Suspense>
     <div className="relative z-10 -mt-8">
       <Suspense fallback={<div className="px-8 grid grid-cols-5 gap-4 py-6">{Array.from({ length: 5 }).map((_, i) => <MovieCardSkeleton key={i} />)}</div>}>
