@@ -1,216 +1,97 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Plus, Info, Star, Clock, ChevronLeft, ChevronRight } from "lucide-react";
-import { formatDuration } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { optimizedTmdbImage } from "@/lib/images";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
 import type { HeroMovieData } from "@/types/movie";
-import { useSavedList } from "@/hooks/useSavedList";
 
 interface HeroBannerProps {
   movies: HeroMovieData[];
 }
 
+function heroHref(movie: HeroMovieData) {
+  return movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
+}
+
+function HeroCard({ movie, priority, onImageError }: { movie: HeroMovieData; priority?: boolean; onImageError: () => void }) {
+  return (
+    <Link
+      href={heroHref(movie)}
+      className="group relative block aspect-[4/3] overflow-hidden rounded-[28px] border border-white/15 bg-[#11131a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400 md:aspect-[16/9] md:rounded-[24px]"
+      aria-label={`${movie.title} haqida batafsil`}
+    >
+      {movie.backdropUrl ? (
+        <Image
+          src={optimizedTmdbImage(movie.backdropUrl, "backdrop")!}
+          alt={movie.title}
+          fill
+          priority={priority}
+          fetchPriority={priority ? "high" : "auto"}
+          sizes="(max-width: 767px) 100vw, 50vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+          onError={onImageError}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-950 via-slate-950 to-black" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" />
+      {movie.imdbRating !== undefined ? (
+        <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-sm font-bold text-white backdrop-blur md:right-5 md:top-5">
+          <span className="rounded-md bg-[#f5c518] px-1.5 py-0.5 text-xs font-black text-black">IMDb</span>
+          {movie.imdbRating.toFixed(1)}
+        </div>
+      ) : null}
+      <div className="absolute inset-x-0 bottom-0 p-5 md:p-6">
+        <h1 className="line-clamp-2 text-2xl font-extrabold leading-tight text-white drop-shadow md:text-[28px]" style={{ fontFamily: "var(--font-display)" }}>{movie.title}</h1>
+        <div className="mt-4 flex flex-wrap gap-2 text-sm text-white md:text-base">
+          {movie.genres?.[0]?.name ? <span className="rounded-xl border border-white/35 bg-black/25 px-3 py-2 backdrop-blur-sm">{movie.genres[0].name}</span> : null}
+          {movie.year ? <span className="rounded-xl border border-white/35 bg-black/25 px-3 py-2 backdrop-blur-sm">{movie.year}</span> : null}
+          {movie.country ? <span className="max-w-full truncate rounded-xl border border-white/35 bg-black/25 px-3 py-2 backdrop-blur-sm">{movie.country}</span> : null}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function HeroBanner({ movies }: HeroBannerProps) {
   const [current, setCurrent] = useState(0);
-  const [imgError, setImgError] = useState<Record<number, boolean>>({});
-  const [toast, setToast] = useState("");
-  const router = useRouter();
-  const later = useSavedList("watchLater");
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (movies.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % movies.length);
-    }, 6000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => setCurrent((value) => (value + 1) % movies.length), 6500);
+    return () => window.clearInterval(timer);
   }, [movies.length]);
 
   if (!movies.length) return null;
 
-  const movie = movies[current];
-  const href =
-    movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
-  const saved = later.has(movie.id);
-  const toggleLater = () => {
-    if (!later.isAuthenticated) return router.push("/kirish");
-    later.toggle(movie.id);
-    setToast(saved ? "Keyin ko‘raman ro‘yxatidan olib tashlandi" : "Keyin ko‘raman ro‘yxatiga qo‘shildi");
-    window.setTimeout(() => setToast(""), 2200);
-  };
+  const next = (current + 1) % movies.length;
+  const previousSlide = () => setCurrent((value) => (value - 1 + movies.length) % movies.length);
+  const nextSlide = () => setCurrent((value) => (value + 1) % movies.length);
+  const currentMovie = failed[movies[current].id] ? { ...movies[current], backdropUrl: undefined } : movies[current];
+  const nextMovie = failed[movies[next].id] ? { ...movies[next], backdropUrl: undefined } : movies[next];
 
   return (
-    <div className="relative w-full h-[88vh] min-h-[500px] overflow-hidden">
-      {/* Background */}
-      <div key={current} className="absolute inset-0 animate-in fade-in duration-700">
-          {movie.backdropUrl && !imgError[current] ? (
-            <Image
-              src={optimizedTmdbImage(movie.backdropUrl, "backdrop")!}
-              alt={movie.title}
-              fill
-              priority={current === 0}
-              fetchPriority={current === 0 ? "high" : "auto"}
-              className="object-cover"
-              sizes="100vw"
-              onError={() => setImgError((p) => ({ ...p, [current]: true }))}
-            />
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{ background: "linear-gradient(135deg, #0A0A0F, #1a0a2e)" }}
-            />
-          )}
+    <section className="relative mx-auto max-w-[1400px] px-4 pb-4 pt-5 md:px-8 md:pb-5 md:pt-6" aria-label="Tanlangan kontent">
+      <div className="md:hidden">
+        <HeroCard movie={currentMovie} priority={current === 0} onImageError={() => setFailed((value) => ({ ...value, [currentMovie.id]: true }))} />
+      </div>
+      <div className="hidden gap-3 md:grid md:grid-cols-2">
+        <HeroCard movie={currentMovie} priority={current === 0} onImageError={() => setFailed((value) => ({ ...value, [currentMovie.id]: true }))} />
+        {movies.length > 1 ? <HeroCard movie={nextMovie} priority={next === 0} onImageError={() => setFailed((value) => ({ ...value, [nextMovie.id]: true }))} /> : null}
       </div>
 
-      {/* Overlays */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to right, rgba(10,10,15,0.95) 0%, rgba(10,10,15,0.6) 50%, rgba(10,10,15,0.2) 100%)",
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(10,10,15,1) 0%, rgba(10,10,15,0.3) 40%, transparent 70%)",
-        }}
-      />
-
-      {/* Content */}
-      <div className="relative h-full max-w-[1400px] mx-auto px-4 md:px-8 flex flex-col justify-end pb-16 md:pb-24">
-          <div key={current} className="max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500">
-            {/* Badges */}
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              {movie.isTrending && <Badge variant="pink">🔥 Trend</Badge>}
-              {movie.isFeatured && <Badge variant="purple">⭐ Tanlangan</Badge>}
-              {movie.genres?.[0] && (
-                <Badge variant="default">{movie.genres[0].name}</Badge>
-              )}
-              {movie.year && (
-                <Badge variant="default">{movie.year}</Badge>
-              )}
-            </div>
-
-            {/* Title */}
-            <h1
-              className="font-bold text-white mb-3 leading-tight"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              }}
-            >
-              {movie.title}
-            </h1>
-
-            {/* Meta */}
-            <div className="flex items-center gap-4 mb-4 flex-wrap">
-              {movie.imdbRating && (
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-semibold text-yellow-400">
-                    {movie.imdbRating.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-gray-400">IMDb</span>
-                </div>
-              )}
-              {movie.duration && (
-                <div className="flex items-center gap-1 text-gray-400">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm">{formatDuration(movie.duration)}</span>
-                </div>
-              )}
-              {movie.country && (
-                <span className="text-sm text-gray-400">{movie.country}</span>
-              )}
-              {movie.dubbing && (
-                <Badge variant="green" size="sm">{movie.dubbing} dublyaj</Badge>
-              )}
-            </div>
-
-            {/* Description */}
-            {movie.shortDesc && (
-              <p className="text-gray-300 text-sm md:text-base mb-6 line-clamp-3 max-w-lg">
-                {movie.shortDesc}
-              </p>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <Link href={`${href}/tomosha`}>
-                <Button size="lg">
-                  <Play className="h-5 w-5 fill-white" />
-                  Tomosha qilish
-                </Button>
-              </Link>
-              <Link href={href}>
-                <Button variant="secondary" size="lg">
-                  <Info className="h-5 w-5" />
-                  Batafsil
-                </Button>
-              </Link>
-              <button
-                onClick={toggleLater}
-                aria-label={saved ? "Keyin ko‘raman ro‘yxatidan olib tashlash" : "Keyin ko‘ramanga qo‘shish"}
-                className="p-3 rounded-xl transition-all hover:bg-white/12"
-                style={{
-                  background: saved ? "rgba(124,58,237,.28)" : "rgba(255,255,255,0.08)",
-                  border: saved ? "1px solid rgba(168,85,247,.7)" : "1px solid var(--border)",
-                }}
-              >
-                {saved ? <span className="text-lg leading-none text-white">✓</span> : <Plus className="h-5 w-5 text-white" />}
-              </button>
-            </div>
-          </div>
-
-        {/* Slide indicators */}
-        {movies.length > 1 && (
-          <div className="flex items-center gap-2 mt-8">
-            {movies.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                aria-label={`${i + 1}-slaydni ko'rsatish`}
-                aria-current={i === current ? "true" : undefined}
-                className="transition-all duration-300 rounded-full"
-                style={{
-                  height: "4px",
-                  width: i === current ? "28px" : "16px",
-                  background:
-                    i === current
-                      ? "linear-gradient(90deg, #7C3AED, #EC4899)"
-                      : "rgba(255,255,255,0.3)",
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Navigation arrows */}
-      {movies.length > 1 && (
+      {movies.length > 1 ? (
         <>
-          <button
-            onClick={() => setCurrent((p) => (p - 1 + movies.length) % movies.length)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full glass transition-all hover:scale-110 hidden md:flex"
-          >
-            <ChevronLeft className="h-6 w-6 text-white" />
-          </button>
-          <button
-            onClick={() => setCurrent((p) => (p + 1) % movies.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full glass transition-all hover:scale-110 hidden md:flex"
-          >
-            <ChevronRight className="h-6 w-6 text-white" />
-          </button>
+          <button type="button" onClick={previousSlide} aria-label="Oldingi banner" className="absolute left-7 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/75 text-white backdrop-blur transition-colors hover:bg-black md:-left-1 md:h-14 md:w-14"><ChevronLeft className="h-6 w-6" /></button>
+          <button type="button" onClick={nextSlide} aria-label="Keyingi banner" className="absolute right-7 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/75 text-white backdrop-blur transition-colors hover:bg-black md:-right-1 md:h-14 md:w-14"><ChevronRight className="h-6 w-6" /></button>
+          <div className="mt-4 flex justify-center gap-3 md:hidden">
+            {movies.slice(0, 5).map((movie, index) => <button key={movie.id} type="button" onClick={() => setCurrent(index)} aria-label={`${index + 1}-banner`} aria-current={index === current ? "true" : undefined} className={`h-2.5 w-2.5 rounded-full transition-colors ${index === current ? "bg-fuchsia-400" : "bg-white/20"}`} />)}
+          </div>
         </>
-      )}
-      {toast && <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 px-4 py-2.5 rounded-xl text-sm text-white" style={{ background: "rgba(28,20,47,.96)", border: "1px solid rgba(168,85,247,.6)", boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>{toast}</div>}
-    </div>
+      ) : null}
+    </section>
   );
 }

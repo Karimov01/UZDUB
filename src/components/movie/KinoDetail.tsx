@@ -11,7 +11,6 @@ import { fadeInUp, staggerChildren } from "@/lib/animations";
 import MovieCard from "@/components/movie/MovieCard";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
-import EngagementPanel from "@/components/engagement/EngagementPanel";
 import type { Movie } from "@/types/movie";
 
 export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie; similarMovies?: Movie[] }) {
@@ -132,8 +131,6 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
           </motion.div>
         </div>
       </div>
-
-      <EngagementPanel content={movie} />
 
       {similar.length > 0 && (
         <section className="max-w-[1400px] mx-auto px-4 md:px-8 py-10">

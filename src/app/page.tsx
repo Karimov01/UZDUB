@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays, Clapperboard, Sparkles, Tv } from "lucide-react";
 import HeroBanner from "@/components/home/HeroBanner";
+import HomeGenreRow from "@/components/home/HomeGenreRow";
 import CategoryRow from "@/components/home/CategoryRow";
 import LatestEpisodeHomeCard from "@/components/home/LatestEpisodeHomeCard";
 import HorizontalScroller from "@/components/home/HorizontalScroller";
@@ -17,7 +18,8 @@ export default async function HomePage() {
   const { featured, mostViewed, trending, serials, newest, latestEpisodes } = await getHomePageData();
   return <div style={{ background: "var(--bg-primary)" }}>
     <Suspense fallback={<HeroSkeleton />}><HeroBanner movies={featured} /></Suspense>
-    <div className="relative z-10 -mt-8">
+    <HomeGenreRow />
+    <div className="relative z-10">
       <Suspense fallback={<div className="px-8 grid grid-cols-5 gap-4 py-6">{Array.from({ length: 5 }).map((_, i) => <MovieCardSkeleton key={i} />)}</div>}>
         <CategoryRow title={<><Clapperboard className="inline-block h-5 w-5 mr-2 text-violet-400" />Eng ko&apos;p ko&apos;rilgan</>} href="/kino" movies={mostViewed} />
       </Suspense>
