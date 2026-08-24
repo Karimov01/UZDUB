@@ -1,34 +1,44 @@
 # Dizayn QA hisoboti
 
-Holat: **BLOCKED**
+Holat: **PASSED**
+
+## Vazifa
+
+UZDUB Play bosh sahifasining faqat mobil header, hero va janrlar qatorini ixchamlashtirish. Desktop va qolgan sahifalar o'zgartirilmadi.
 
 ## Manba rasmlar
 
-- `C:\Users\user\Downloads\Hero banner va header qismi, janr  Desktop.png`
-- `C:\Users\user\Downloads\Hero banner va header qismi, janr  mobile.png`
-- `C:\Users\user\Downloads\Qismlar desktop.png`
-- `C:\Users\user\Downloads\Qismlar mobile.png`
+- `C:\Users\user\Downloads\photo_2026-08-24_14-01-32.jpg`
+- `C:\Users\user\Downloads\photo_2026-08-24_14-01-27.jpg`
 
 ## Tekshirilgan viewportlar
 
-- Desktop: rejalashtirilgan `1680x945`
-- Mobile: rejalashtirilgan `390x844`
+- `320x844`
+- `360x844`
+- `375x844`
+- `390x844`
+- `412x844`
+- `430x844`
 
-## Natija
+## Natijalar
 
-- Kod darajasida desktop va mobil tuzilma reference talablariga moslashtirildi.
-- `lint`, TypeScript va production build muvaffaqiyatli tugadi.
-- Codex ichki brauzeri Windows hostidagi `localhost:3001` va `172.18.192.1:3001` manzillariga ulana olmadi (`ERR_CONNECTION_REFUSED`). Shu sabab reference va lokal screenshotni bitta taqqoslash tasvirida vizual tekshirish yakunlanmadi.
-- Brauzer orqali pixel-level QA bajarilmaguncha bu hisobot `PASSED` deb belgilanmaydi.
+- Sahifa kengligida gorizontal overflow aniqlanmadi.
+- Header balandligi barcha mobil viewportlarda 57 px bo'ldi.
+- Hero 16:9 nisbatga o'tdi va sarlavha 22 px, ko'pi bilan 2 qator qilib cheklandi.
+- Hero metadata pilllari bitta ixcham qatorda qoldi.
+- Har bir sinov kengligida dastlabki 3 ta janr chipi to'liq ko'rindi.
+- Faqat janrlar qatori gorizontal scroll qiladi.
+- Janrlarni o'ngga surish tugmasi URL'ni o'zgartirmasdan qatorni 280 px siljitdi.
+- `lint`: 0 xato, loyihada avvaldan mavjud 11 ogohlantirish.
+- TypeScript: muvaffaqiyatli.
+- Production build: muvaffaqiyatli, 64 sahifa yaratildi.
 
-## Screenshotlar
+## Yakuniy baho
 
-- Lokal screenshot olinmadi: ichki brauzer host dev serveriga kira olmadi.
+P0: 0
 
-## Kod bo‘yicha tasdiqlangan holatlar
+P1: 0
 
-- Home header desktop/mobile alohida responsive ko‘rinishga ega.
-- Home hero desktopda 2 karta, mobilda 1 karta va nuqta indikatorlar bilan ishlaydi.
-- Home janrlar qatori gorizontal scroll va alohida scroll tugmasiga ega.
-- Serial detail qismlar bloki mobilda 3, desktopda 8 ustungacha moslashadi.
-- Detail sahifalaridan izoh/reaksiya paneli olib tashlangan; player sahifalari o‘zgartirilmagan.
+P2: 0
+
+Mobil responsive vazifa qabul mezonlariga mos.
