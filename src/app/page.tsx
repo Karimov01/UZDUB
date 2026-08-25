@@ -22,7 +22,7 @@ export default async function HomePage() {
     <Suspense fallback={<HeroSkeleton />}><HeroBanner movies={featured} /></Suspense>
     <HomeGenreRow />
     <main className="relative z-10 pb-12">
-      <Suspense fallback={<div className="grid grid-cols-2 gap-3 px-4 py-6 md:grid-cols-6 md:px-8">{Array.from({ length: 6 }).map((_, i) => <MovieCardSkeleton key={i} />)}</div>}>
+      <Suspense fallback={<div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-3 px-3 py-6 sm:px-4 md:grid-cols-6 md:px-8">{Array.from({ length: 6 }).map((_, i) => <MovieCardSkeleton key={i} />)}</div>}>
         <CategoryRow title={<><Sparkles className="inline-block h-5 w-5 mr-2 text-amber-400" />Yangi tarjima kinolar</>} href="/kino" movies={newest} />
       </Suspense>
 
@@ -30,7 +30,7 @@ export default async function HomePage() {
 
       <TopFiveLists movies={topMovies} serials={topSerials} />
 
-      {latestEpisodes.length ? <section className="py-5"><SectionHeader title="Yangi qismlar" href="/yangi-qismlar" icon={<CalendarDays className="h-5 w-5 text-amber-400" />} /><div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2 px-4 md:grid-cols-3 md:px-8 xl:grid-cols-4">{latestEpisodes.map((item) => <LatestEpisodeHomeCard key={item.episode.id} item={item} />)}</div></section> : null}
+      {latestEpisodes.length ? <section className="py-5"><SectionHeader title="Yangi qismlar" href="/yangi-qismlar" icon={<CalendarDays className="h-5 w-5 text-amber-400" />} /><div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2 px-3 sm:px-4 md:grid-cols-3 md:px-8 xl:grid-cols-4">{latestEpisodes.map((item) => <LatestEpisodeHomeCard key={item.episode.id} item={item} />)}</div></section> : null}
 
       {comingSoon.length ? <section className="py-5"><SectionHeader title="Tez kunda" href="/tez-kunda" icon={<Clock3 className="h-5 w-5 text-amber-400" />} /><HorizontalScroller>{comingSoon.map((item) => <ComingSoonCard key={item.id} item={item} />)}</HorizontalScroller></section> : null}
     </main>

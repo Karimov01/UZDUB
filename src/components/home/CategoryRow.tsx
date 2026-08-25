@@ -22,7 +22,7 @@ export default function CategoryRow({
   return (
     <section className="py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5 px-4 md:px-8 max-w-[1400px] mx-auto">
+      <div className="mx-auto mb-5 flex max-w-[1400px] items-center justify-between px-3 sm:px-4 md:px-8">
         <h2
           className="text-xl md:text-2xl font-bold text-white"
           style={{ fontFamily: "var(--font-display)" }}

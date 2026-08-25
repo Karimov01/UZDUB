@@ -15,11 +15,11 @@ export default function HorizontalScroller({ children }: { children: React.React
   };
 
   return (
-    <div className="relative">
-      <div ref={scrollRef} className="flex gap-3 md:gap-4 overflow-x-auto no-scrollbar px-4 md:px-8" style={{ scrollSnapType: "x mandatory" }}>
+    <div className="relative mx-auto max-w-[1400px] px-3 sm:px-4 md:px-8">
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto no-scrollbar md:gap-4" style={{ scrollSnapType: "x mandatory" }}>
         {children}
       </div>
-      <div className="hidden md:flex absolute right-8 -top-11 gap-2">
+      <div className="absolute right-8 -top-11 hidden gap-2 md:flex">
         <button type="button" onClick={() => scroll("left")} aria-label="Oldingi kartalar" className="p-1.5 rounded-lg transition-colors hover:bg-white/8" style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}>
           <ChevronLeft className="h-4 w-4" />
         </button>
