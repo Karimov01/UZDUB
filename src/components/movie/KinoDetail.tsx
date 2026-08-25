@@ -12,6 +12,7 @@ import MovieCard from "@/components/movie/MovieCard";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
 import type { Movie } from "@/types/movie";
+import Script from "next/script";
 
 export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie; similarMovies?: Movie[] }) {
   const similar = similarMovies.slice(0, 6);
@@ -21,10 +22,23 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
   const isFav = fav.has(movie.id);
   const isLater = later.has(movie.id);
 
-  {/* Yandex.RTB */}
-<script>window.yaContextCb=window.yaContextCb||[]</script>
-<script src="https://yandex.ru/ads/system/context.js" async></script>
+<>
+  <Script
+    id="yandex-rtb-init"
+    strategy="afterInteractive"
+    dangerouslySetInnerHTML={{
+      __html: `window.yaContextCb = window.yaContextCb || [];`,
+    }}
+  />
 
+  <Script
+    src="https://yandex.ru/ads/system/context.js"
+    strategy="afterInteractive"
+  />
+
+  {/* KinoDetail mavjud JSX */}
+</>
+  
   return (
     <div style={{ background: "var(--bg-primary)" }}>
       {/* Hero */}
@@ -136,16 +150,23 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
         </div>
       </div>
 
-      {/* Yandex.RTB R-A-19814476-1 */}
-<div id="yandex_rtb_R-A-19814476-1"></div>
-<script>
-window.yaContextCb.push(() => {
-    Ya.Context.AdvManager.render({
-        "blockId": "R-A-19814476-1",
-        "renderTo": "yandex_rtb_R-A-19814476-1"
-    })
-})
-</script>
+     <div id="yandex_rtb_R-A-19814476-1" />
+
+<Script
+  id="yandex-rtb-R-A-19814476-1"
+  strategy="afterInteractive"
+  dangerouslySetInnerHTML={{
+    __html: `
+      window.yaContextCb = window.yaContextCb || [];
+      window.yaContextCb.push(() => {
+        Ya.Context.AdvManager.render({
+          blockId: "R-A-19814476-1",
+          renderTo: "yandex_rtb_R-A-19814476-1"
+        });
+      });
+    `,
+  }}
+/>
 
       {similar.length > 0 && (
         <section className="max-w-[1400px] mx-auto px-4 md:px-8 py-10">
