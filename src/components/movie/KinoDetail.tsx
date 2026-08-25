@@ -21,7 +21,7 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
   const isFav = fav.has(movie.id);
   const isLater = later.has(movie.id);
 
-  <!-- Yandex.RTB -->
+  {/* Yandex.RTB */}
 <script>window.yaContextCb=window.yaContextCb||[]</script>
 <script src="https://yandex.ru/ads/system/context.js" async></script>
 
@@ -136,7 +136,7 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
         </div>
       </div>
 
-      <!-- Yandex.RTB R-A-19814476-1 -->
+      {/* Yandex.RTB R-A-19814476-1 */}
 <div id="yandex_rtb_R-A-19814476-1"></div>
 <script>
 window.yaContextCb.push(() => {
