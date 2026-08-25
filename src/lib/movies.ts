@@ -19,7 +19,7 @@ export async function getAllMovies(): Promise<Movie[]> {
 
 /** Faqat nashr etilgan (PUBLISHED) — ommaviy sahifalar uchun. */
 export async function getPublishedMovies(): Promise<Movie[]> {
-  return (await loadAll()).filter((m) => m.status === "PUBLISHED");
+  return (await loadAll()).filter((m) => m.status === "PUBLISHED" && !m.isComingSoon);
 }
 
 export async function getMovieBySlug(slug: string): Promise<Movie | undefined> {
@@ -46,12 +46,23 @@ export async function getKinolar(): Promise<Movie[]> {
   return (await getPublishedMovies()).filter((m) => m.type === "MOVIE");
 }
 
+export async function getComingSoon(): Promise<Movie[]> {
+  return (await loadAll()).filter((movie) => movie.isComingSoon && movie.status !== "ARCHIVED");
+}
+
 function toCardData(movie: Movie): MovieCardData {
+  const latestEpisode = [...(movie.episodes ?? [])]
+    .filter((episode) => Boolean(episode.videoUrl?.trim()))
+    .sort((a, b) => b.season - a.season || b.episode - a.episode)[0];
+
   return {
     id: movie.id,
     slug: movie.slug,
     title: movie.title,
+    status: movie.status,
     posterUrl: movie.posterUrl,
+    backdropUrl: movie.backdropUrl,
+    shortDesc: movie.shortDesc,
     type: movie.type,
     year: movie.year,
     duration: movie.duration,
@@ -59,6 +70,12 @@ function toCardData(movie: Movie): MovieCardData {
     viewCount: movie.viewCount,
     isTrending: movie.isTrending,
     isPremium: movie.isPremium,
+    isComingSoon: movie.isComingSoon,
+    isRussian: movie.isRussian,
+    publishedAt: movie.publishedAt,
+    genres: movie.genres,
+    latestSeason: latestEpisode?.season,
+    latestEpisode: latestEpisode?.episode,
   };
 }
 
@@ -80,6 +97,9 @@ export interface HomePageData {
   trending: MovieCardData[];
   serials: MovieCardData[];
   newest: MovieCardData[];
+  topMovies: MovieCardData[];
+  topSerials: MovieCardData[];
+  comingSoon: MovieCardData[];
   latestEpisodes: LatestEpisode[];
 }
 
@@ -150,7 +170,10 @@ function getDiverseLatestEpisodes(movies: Movie[], limit: number): LatestEpisode
  * To'liq Movie JSON (qismlar, video URL, tavsif) client komponentlarga uzatilmaydi.
  */
 export const getHomePageData = cache(async (): Promise<HomePageData> => {
-  const published = await getPublishedMovies();
+  const all = await loadAll();
+  const published = all.filter((movie) => movie.status === "PUBLISHED" && !movie.isComingSoon);
+  const byNewest = (a: Movie, b: Movie) => timestampValue(b.publishedAt ?? b.createdAt ?? "") - timestampValue(a.publishedAt ?? a.createdAt ?? "");
+  const byRank = (a: Movie, b: Movie) => (b.viewCount ?? 0) - (a.viewCount ?? 0) || (b.imdbRating ?? 0) - (a.imdbRating ?? 0);
   const mostViewed = [...published]
     .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
     .slice(0, 10)
@@ -161,8 +184,11 @@ export const getHomePageData = cache(async (): Promise<HomePageData> => {
     featured: published.filter((m) => m.isFeatured).slice(0, 5).map(toHeroData),
     mostViewed,
     trending: published.filter((m) => m.isTrending).slice(0, 10).map(toCardData),
-    serials: published.filter((m) => m.type === "SERIAL").slice(0, 10).map(toCardData),
-    newest: published.slice(0, 10).map(toCardData),
-    latestEpisodes: getDiverseLatestEpisodes(published, 10),
+    serials: published.filter((m) => m.type === "SERIAL").sort(byNewest).slice(0, 10).map(toCardData),
+    newest: published.filter((m) => m.type === "MOVIE").sort(byNewest).slice(0, 12).map(toCardData),
+    topMovies: published.filter((m) => m.type === "MOVIE").sort(byRank).slice(0, 5).map(toCardData),
+    topSerials: published.filter((m) => m.type === "SERIAL").sort(byRank).slice(0, 5).map(toCardData),
+    comingSoon: all.filter((m) => m.isComingSoon && m.status !== "ARCHIVED").sort(byNewest).slice(0, 12).map(toCardData),
+    latestEpisodes: getDiverseLatestEpisodes(published, 16),
   };
 });

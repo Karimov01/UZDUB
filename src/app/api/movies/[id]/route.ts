@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 function publicPaths(movie?: Movie): string[] {
-  const common = ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar"];
+  const common = ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar", "/tez-kunda"];
   if (!movie) return common;
   const contentPath = movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
   const episodePaths = movie.type === "SERIAL" ? (movie.episodes ?? []).map((episode) => `/serial/${movie.slug}/qism/${episode.season}/${episode.episode}`) : [];
@@ -43,7 +43,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Ma'lumotlar noto'g'ri" }, { status: 400 });
   const d = parsed.data;
   const seo = createAutomaticSeo({ title: d.title, year: d.year, type: d.type as ContentType, shortDesc: d.shortDesc, description: d.description });
-  const updated: Movie = { ...existing, id, slug: existing.slug, title: d.title, originalTitle: d.originalTitle || undefined, description: d.description, shortDesc: d.shortDesc || undefined, posterUrl: d.posterUrl || undefined, backdropUrl: d.backdropUrl || undefined, videoUrl: d.videoUrl || undefined, trailerUrl: d.trailerUrl || undefined, type: d.type as ContentType, status: d.status as ContentStatus, year: d.year, duration: d.duration, country: d.country || undefined, language: d.language || undefined, dubbing: d.dubbing || undefined, imdbRating: d.imdbRating, isFeatured: d.isFeatured, isTrending: d.isTrending, isPremium: d.isPremium, ...seo, updatedAt: new Date().toISOString(), genres: mapGenres(d.genres), episodes: mapEpisodes(d.episodes, id, existing.episodes ?? []) };
+  const now = new Date().toISOString();
+  const isNewPublication = d.status === "PUBLISHED" && !d.isComingSoon && (existing.status !== "PUBLISHED" || existing.isComingSoon);
+  const updated: Movie = { ...existing, id, slug: existing.slug, title: d.title, originalTitle: d.originalTitle || undefined, description: d.description, shortDesc: d.shortDesc || undefined, posterUrl: d.posterUrl || undefined, backdropUrl: d.backdropUrl || undefined, videoUrl: d.videoUrl || undefined, trailerUrl: d.trailerUrl || undefined, type: d.type as ContentType, status: d.status as ContentStatus, year: d.year, duration: d.duration, country: d.country || undefined, language: d.language || undefined, dubbing: d.dubbing || undefined, imdbRating: d.imdbRating, isFeatured: d.isFeatured, isTrending: d.isTrending, isPremium: d.isPremium, isComingSoon: d.isComingSoon, isRussian: d.isRussian, ...seo, publishedAt: isNewPublication ? now : existing.publishedAt, updatedAt: now, genres: mapGenres(d.genres), episodes: mapEpisodes(d.episodes, id, existing.episodes ?? []) };
   try { await updateMovie(id, updated); } catch (err) { const msg = err instanceof Error ? err.message : ""; return NextResponse.json({ error: `Bazaga saqlab bo'lmadi. ${msg}`.trim() }, { status: 500 }); }
   revalidateMovie(existing);
   revalidateMovie(updated);

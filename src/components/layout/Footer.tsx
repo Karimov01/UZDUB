@@ -9,6 +9,7 @@ const footerLinks = {
     { label: "Multfilmlar", href: "/janr/multfilm" },
     { label: "Janrlar", href: "/janr" },
     { label: "Top Kinolar", href: "/top" },
+    { label: "Tez kunda", href: "/tez-kunda" },
   ],
   Janrlar: [
     { label: "Drama", href: "/janr/drama" },

@@ -76,6 +76,8 @@ export interface Movie {
   isFeatured?: boolean;
   isTrending?: boolean;
   isPremium?: boolean;
+  isComingSoon?: boolean;
+  isRussian?: boolean;
 
   seoTitle?: string;
   seoDescription?: string;
@@ -98,6 +100,7 @@ export type MovieCardData = Pick<
   | "slug"
   | "title"
   | "posterUrl"
+  | "status"
   | "type"
   | "year"
   | "duration"
@@ -105,7 +108,16 @@ export type MovieCardData = Pick<
   | "viewCount"
   | "isTrending"
   | "isPremium"
->;
+  | "isComingSoon"
+  | "isRussian"
+  | "publishedAt"
+  | "genres"
+> & {
+  backdropUrl?: string;
+  shortDesc?: string;
+  latestSeason?: number;
+  latestEpisode?: number;
+};
 
 /** Hero uchun karta ma'lumotidan tashqari zarur qisqa metadata. */
 export type HeroMovieData = MovieCardData &

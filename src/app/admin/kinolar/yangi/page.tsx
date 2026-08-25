@@ -13,7 +13,7 @@ export default function YangiKinoPage() {
     title: "", originalTitle: "", type: "MOVIE", year: "", duration: "",
     country: "", language: "Ingliz", dubbing: "O'zbek", imdbRating: "",
     description: "", shortDesc: "", posterUrl: "", backdropUrl: "", videoUrl: "", trailerUrl: "", status: "DRAFT",
-    genres: [] as string[], isFeatured: false, isTrending: false, isPremium: false,
+    genres: [] as string[], isFeatured: false, isTrending: false, isPremium: false, isComingSoon: false, isRussian: false,
   });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -393,6 +393,8 @@ export default function YangiKinoPage() {
                 { key: "isFeatured", label: "Hero bannerda ko'rsatish" },
                 { key: "isTrending", label: "Trendda ko'rsatish" },
                 { key: "isPremium", label: "Premium kontent" },
+                { key: "isComingSoon", label: "Tez kunda" },
+                { key: "isRussian", label: "Rus tilida" },
               ].map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer group">
                   <div
@@ -408,6 +410,7 @@ export default function YangiKinoPage() {
                   <span className="text-sm group-hover:text-white transition-colors" style={{ color: "var(--text-secondary)" }}>{label}</span>
                 </label>
               ))}
+              {form.isComingSoon ? <p className="pl-12 text-xs leading-5" style={{ color: "var(--text-muted)" }}>Tez kunda yoqilsa material normal Kino va Serial bo&apos;limlarida ko&apos;rinmaydi.</p> : null}
             </div>
           </div>
         </div>

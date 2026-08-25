@@ -7,7 +7,7 @@ const shared = (left: { id?: string; name?: string }[] | undefined, right: { id?
 
 /** Kontent sahifalari uchun serverda hisoblanadigan barqaror tavsiyalar. */
 export function getRecommendations(current: Movie, candidates: Movie[], limit = 12): Recommendation[] {
-  const scored = candidates.filter((candidate) => candidate.id !== current.id && candidate.status === "PUBLISHED" && Boolean(candidate.videoUrl || candidate.episodes?.some((episode) => episode.videoUrl))).map((candidate) => {
+  const scored = candidates.filter((candidate) => candidate.id !== current.id && candidate.status === "PUBLISHED" && !candidate.isComingSoon && Boolean(candidate.videoUrl || candidate.episodes?.some((episode) => episode.videoUrl))).map((candidate) => {
     let score = candidate.type === current.type ? 40 : 0;
     const reasons: RecommendationReason[] = [];
     const genres = shared(candidate.genres, current.genres);

@@ -32,6 +32,8 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
     isFeatured: !!movie.isFeatured,
     isTrending: !!movie.isTrending,
     isPremium: !!movie.isPremium,
+    isComingSoon: !!movie.isComingSoon,
+    isRussian: !!movie.isRussian,
     episodes: (movie.episodes ?? []).map((e): EpisodeForm => ({
       id: e.id,
       season: String(e.season ?? 1),
@@ -261,7 +263,7 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
               <option value="ARCHIVED">Arxivlangan</option>
             </select>
             <div className="space-y-3">
-              {[{ key: "isFeatured", label: "Hero bannerda" }, { key: "isTrending", label: "Trendda" }, { key: "isPremium", label: "Premium" }].map(({ key, label }) => (
+              {[{ key: "isFeatured", label: "Hero bannerda" }, { key: "isTrending", label: "Trendda" }, { key: "isPremium", label: "Premium" }, { key: "isComingSoon", label: "Tez kunda" }, { key: "isRussian", label: "Rus tilida" }].map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer">
                   <div className="w-9 h-5 rounded-full relative transition-all" style={{ background: (form as Record<string, unknown>)[key] ? "linear-gradient(135deg, #7C3AED, #EC4899)" : "var(--bg-primary)", border: "1px solid var(--border)" }} onClick={() => set(key, !(form as Record<string, unknown>)[key])}>
                     <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all" style={{ left: (form as Record<string, unknown>)[key] ? "calc(100% - 18px)" : "2px" }} />
@@ -269,6 +271,7 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
                   <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
                 </label>
               ))}
+              {form.isComingSoon ? <p className="pl-12 text-xs leading-5" style={{ color: "var(--text-muted)" }}>Tez kunda yoqilsa material normal Kino va Serial bo&apos;limlarida ko&apos;rinmaydi.</p> : null}
             </div>
           </div>
         </div>

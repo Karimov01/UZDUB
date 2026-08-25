@@ -37,8 +37,11 @@ model Movie {
   isFeatured    Boolean  @default(false)
   isTrending    Boolean  @default(false)
   isPremium     Boolean  @default(false)
+  isComingSoon  Boolean  @default(false)
+  isRussian     Boolean  @default(false)
   genres        String   @default("[]")
 
   createdAt DateTime @default(now())
+  publishedAt DateTime?
   updatedAt DateTime @updatedAt
 }

@@ -25,11 +25,12 @@ export async function POST(req: Request) {
   while (await slugExists(slug)) slug = `${base}-${i++}`;
   const id = randomUUID();
   const seo = createAutomaticSeo({ title: d.title, year: d.year, type: d.type as ContentType, shortDesc: d.shortDesc, description: d.description });
-  const movie: Movie = { id, slug, title: d.title, originalTitle: d.originalTitle || undefined, description: d.description, shortDesc: d.shortDesc || undefined, posterUrl: d.posterUrl || undefined, backdropUrl: d.backdropUrl || undefined, videoUrl: d.videoUrl || undefined, trailerUrl: d.trailerUrl || undefined, type: d.type as ContentType, status: d.status as ContentStatus, year: d.year, duration: d.duration, country: d.country || undefined, language: d.language || undefined, dubbing: d.dubbing || undefined, imdbRating: d.imdbRating, viewCount: 0, isFeatured: d.isFeatured, isTrending: d.isTrending, isPremium: d.isPremium, ...seo, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), genres: mapGenres(d.genres), episodes: mapEpisodes(d.episodes, id) };
+  const now = new Date().toISOString();
+  const movie: Movie = { id, slug, title: d.title, originalTitle: d.originalTitle || undefined, description: d.description, shortDesc: d.shortDesc || undefined, posterUrl: d.posterUrl || undefined, backdropUrl: d.backdropUrl || undefined, videoUrl: d.videoUrl || undefined, trailerUrl: d.trailerUrl || undefined, type: d.type as ContentType, status: d.status as ContentStatus, year: d.year, duration: d.duration, country: d.country || undefined, language: d.language || undefined, dubbing: d.dubbing || undefined, imdbRating: d.imdbRating, viewCount: 0, isFeatured: d.isFeatured, isTrending: d.isTrending, isPremium: d.isPremium, isComingSoon: d.isComingSoon, isRussian: d.isRussian, ...seo, publishedAt: d.status === "PUBLISHED" && !d.isComingSoon ? now : undefined, createdAt: now, updatedAt: now, genres: mapGenres(d.genres), episodes: mapEpisodes(d.episodes, id) };
   try { await addMovie(movie); } catch (err) { const msg = err instanceof Error ? err.message : ""; return NextResponse.json({ error: `Bazaga saqlab bo'lmadi. DATABASE_URL ni tekshiring. ${msg}`.trim() }, { status: 500 }); }
 
   const path = movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;
-  for (const p of ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar", path]) revalidatePath(p);
+  for (const p of ["/", "/kino", "/serial", "/top", "/janr", "/yangi-qismlar", "/tez-kunda", path]) revalidatePath(p);
   revalidatePath("/janr/[slug]", "page");
   void notifyIndexNow([path, ...(movie.type === "SERIAL" ? (movie.episodes ?? []).map((episode) => `/serial/${movie.slug}/qism/${episode.season}/${episode.episode}`) : [])]);
   return NextResponse.json({ ok: true, movie });
