@@ -1,30 +1,14 @@
 import type { Metadata } from "next";
-import { getSerials } from "@/lib/movies";
-import MovieCard from "@/components/movie/MovieCard";
+import CatalogPage from "@/components/catalog/CatalogPage";
+import { parseCatalogSort } from "@/lib/catalog";
 
-export const revalidate = 600;
+export const metadata: Metadata = {
+  title: "Yangi seriallar o‘zbek tilida",
+  description: "Yangi seriallarni o‘zbek tilida bepul onlayn tomosha qiling.",
+  alternates: { canonical: "/serial" },
+};
 
-export const metadata: Metadata = { title: "Seriallar" };
-
-export default async function SeriallarPage() {
-  const serials = await getSerials();
-  return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-10" style={{ color: "var(--text-primary)" }}>
-      <h1
-        className="text-3xl font-bold text-white mb-2"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
-        Barcha Seriallar
-      </h1>
-      <p className="mb-8" style={{ color: "var(--text-muted)" }}>
-        {serials.length} ta serial mavjud
-      </p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {serials.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} />
-        ))}
-      </div>
-    </div>
-  );
+export default async function SerialsPage({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
+  const { sort } = await searchParams;
+  return <CatalogPage kind="serial" page={1} sort={parseCatalogSort(sort)} />;
 }

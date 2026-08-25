@@ -1,44 +1,37 @@
-# Dizayn QA hisoboti
+# Design QA
 
-Holat: **PASSED**
+- Source visual truth: `C:\Users\user\Downloads\2026-08-26 00_56_39-.png` and `C:\Users\user\Downloads\2026-08-26 01_00_14-Yangi seriallar uzbek tilida 2025-2026 - freekino.net.png`
+- Implementation: `http://localhost:3000/kino` and `http://localhost:3000/serial`
+- Source dimensions: 1920×1080 (kino), 1000×918 (serial)
+- Intended implementation viewports: desktop 1920×1080 and mobile 390×844, DPR 1
+- State: dark theme, `new` filter, first catalog page
 
-## Vazifa
+## Full-view comparison evidence
 
-UZDUB Play bosh sahifasining faqat mobil header, hero va janrlar qatorini ixchamlashtirish. Desktop va qolgan sahifalar o'zgartirilmadi.
+The source images were opened at original resolution. The implementation routes returned HTTP 200 and their structure was verified, but the in-app browser did not return a capturable rendered screenshot in this run. A trustworthy visual side-by-side comparison therefore cannot be claimed.
 
-## Manba rasmlar
+## Focused region comparison evidence
 
-- `C:\Users\user\Downloads\photo_2026-08-24_14-01-32.jpg`
-- `C:\Users\user\Downloads\photo_2026-08-24_14-01-27.jpg`
+Blocked for the same reason. Code-level checks confirm the requested 5-column movie grid, 3-column serial grid, compact global header, filter controls, card reuse and pagination structure, but code inspection is not accepted as visual evidence.
 
-## Tekshirilgan viewportlar
+## Functional checks
 
-- `320x844`
-- `360x844`
-- `375x844`
-- `390x844`
-- `412x844`
-- `430x844`
+- `/`, `/kino`, `/kino/sahifa/1?sort=rating`, `/serial`, and `/serial/sahifa/1?sort=random` returned HTTP 200.
+- TypeScript passed with no errors.
+- ESLint passed with no errors; pre-existing warnings remain outside this scope.
 
-## Natijalar
+## Findings
 
-- Sahifa kengligida gorizontal overflow aniqlanmadi.
-- Header balandligi barcha mobil viewportlarda 57 px bo'ldi.
-- Hero 16:9 nisbatga o'tdi va sarlavha 22 px, ko'pi bilan 2 qator qilib cheklandi.
-- Hero metadata pilllari bitta ixcham qatorda qoldi.
-- Har bir sinov kengligida dastlabki 3 ta janr chipi to'liq ko'rindi.
-- Faqat janrlar qatori gorizontal scroll qiladi.
-- Janrlarni o'ngga surish tugmasi URL'ni o'zgartirmasdan qatorni 280 px siljitdi.
-- `lint`: 0 xato, loyihada avvaldan mavjud 11 ogohlantirish.
-- TypeScript: muvaffaqiyatli.
-- Production build: muvaffaqiyatli, 64 sahifa yaratildi.
+- [P2] Browser-rendered fidelity evidence is unavailable.
+  - Location: kino and serial catalog pages, desktop and mobile.
+  - Evidence: source screenshots are available, implementation screenshot is not.
+  - Impact: exact typography, spacing, wrapping, poster crop and responsive polish cannot be signed off visually.
+  - Fix: capture both routes in the in-app browser at the listed viewports and compare them side by side with the references.
 
-## Yakuniy baho
+## Comparison history
 
-P0: 0
+- Initial pass: blocked before visual comparison because no implementation screenshot could be captured.
 
-P1: 0
+## Final result
 
-P2: 0
-
-Mobil responsive vazifa qabul mezonlariga mos.
+blocked

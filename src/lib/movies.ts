@@ -50,7 +50,7 @@ export async function getComingSoon(): Promise<Movie[]> {
   return (await loadAll()).filter((movie) => movie.isComingSoon && movie.status !== "ARCHIVED");
 }
 
-function toCardData(movie: Movie): MovieCardData {
+export function toCardData(movie: Movie): MovieCardData {
   const latestEpisode = [...(movie.episodes ?? [])]
     .filter((episode) => Boolean(episode.videoUrl?.trim()))
     .sort((a, b) => b.season - a.season || b.episode - a.episode)[0];

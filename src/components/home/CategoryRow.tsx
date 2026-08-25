@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import HorizontalScroller from "@/components/home/HorizontalScroller";
 import HomeMovieCard from "@/components/home/HomeMovieCard";
+import SectionMoreButton from "@/components/home/SectionMoreButton";
 import type { MovieCardData } from "@/types/movie";
 
 interface CategoryRowProps {
@@ -29,18 +28,7 @@ export default function CategoryRow({
         >
           {title}
         </h2>
-        <div className="flex items-center gap-2">
-          {href && (
-            <Link
-              href={href}
-              className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-white"
-              style={{ color: "var(--accent-violet)" }}
-            >
-              Barchasi
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          )}
-        </div>
+        {href ? <SectionMoreButton href={href} /> : null}
       </div>
 
       {/* Scroll container */}
