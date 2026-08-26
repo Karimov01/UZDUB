@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import { Bookmark, CalendarDays, ChevronDown, Eye, Film, Layers3, Play, Tag } from "lucide-react";
 import { useState } from "react";
 import { useSavedList } from "@/hooks/useSavedList";
@@ -74,8 +73,6 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
       </div>
     </section>
 
-<div id="yandex_rtb_R-A-19814476-1" />
-    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
   
     {firstEpisode ? <section className="mx-auto max-w-[1400px] px-4 pt-8 md:px-8">
       <div className="mb-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-4 md:p-5">

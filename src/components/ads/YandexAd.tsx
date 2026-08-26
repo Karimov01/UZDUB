@@ -79,12 +79,12 @@ export default function YandexAd({ blockId, className = "" }: YandexAdProps) {
   return (
     <section
       aria-label="Reklama"
-      className={`mx-auto w-full max-w-[1400px] overflow-hidden px-4 md:px-8 ${hasAd ? "py-4 md:py-6" : "py-2 md:py-3"} transition-[padding] duration-200 motion-reduce:transition-none ${className}`}
+      className={`mx-auto w-full max-w-[1400px] overflow-hidden px-4 md:px-8 ${hasAd ? "py-4 md:py-6" : "py-2 md:py-3"} transition-[padding] duration-200 motion-reduce:transition-none [&.player-ad-slot]:max-w-none [&.player-ad-slot]:px-0 [&.player-ad-slot]:py-0 ${className}`}
     >
       <div
         ref={containerRef}
         id={containerId}
-        className={`mx-auto w-full overflow-hidden text-center [&_iframe]:mx-auto ${hasAd ? "min-h-[50px] md:min-h-[90px]" : "min-h-0"}`}
+        className={`mx-auto w-full overflow-hidden text-center [&_iframe]:mx-auto [&_iframe]:max-w-full ${hasAd ? "min-h-[50px] md:min-h-[90px]" : "min-h-0"} [.player-ad-slot_&]:min-h-[100px] md:[.player-ad-slot_&]:min-h-[250px]`}
       />
     </section>
   );

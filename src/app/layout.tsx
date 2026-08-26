@@ -40,5 +40,5 @@ const siteJsonLd = [
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><Script id="yandex-rtb-queue" strategy="beforeInteractive">{"window.yaContextCb = window.yaContextCb || [];"}</Script><Script id="yandex-context" src="https://yandex.ru/ads/system/context.js" strategy="afterInteractive" /><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout><Analytics /></body></html>;
+  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><head><link rel="preconnect" href="https://yandex.ru" /><link rel="preconnect" href="https://an.yandex.ru" crossOrigin="anonymous" /><link rel="dns-prefetch" href="https://yandex.ru" /><link rel="dns-prefetch" href="https://an.yandex.ru" /></head><body className="min-h-full antialiased flex flex-col"><Script id="yandex-rtb-queue" strategy="beforeInteractive">{"window.yaContextCb = window.yaContextCb || [];"}</Script><Script id="yandex-context" src="https://yandex.ru/ads/system/context.js" strategy="afterInteractive" /><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout><Analytics /></body></html>;
 }

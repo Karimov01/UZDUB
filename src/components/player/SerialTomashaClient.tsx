@@ -11,7 +11,7 @@ import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/Se
 import WatchComments, { type WatchReaction } from "@/components/player/WatchComments";
 import { formatViewCount } from "@/lib/utils";
 import { isPublicDirectVideoUrl } from "@/lib/video-seo";
-import Script from "next/script";
+import PlayerAdSlot from "@/components/ads/PlayerAdSlot";
 
 function episodeHref(slug: string, episode: Episode) {
   return `/serial/${slug}/qism/${episode.season}/${episode.episode}`;
@@ -61,6 +61,8 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   return <div className="min-h-screen bg-[#070910] text-white">
     <main className="mx-auto grid w-full max-w-[1400px] gap-6 px-4 pb-8 pt-5 md:px-8 xl:grid-cols-[minmax(0,1fr)_380px]">
       <div className="min-w-0">
+        <PlayerAdSlot />
+
         <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black">
           {videoUrl ? <UzdubPlayer key={currentEpisode.id} src={videoUrl} poster={currentEpisode.previewUrl || serial.backdropUrl || serial.posterUrl} onEnded={nextEpisode ? () => setNextCountdown(5) : undefined} /> : <div className="flex aspect-video flex-col items-center justify-center gap-3 text-gray-400"><VideoOff className="h-11 w-11" /><p>Bu qism uchun video havolasi qo‘shilmagan</p></div>}
           {nextCountdown !== null && nextEpisode ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4"><div className="w-full max-w-sm rounded-2xl border border-fuchsia-400/40 bg-[#11131d] p-5 text-center"><p className="text-gray-400">Keyingi qism {nextCountdown} soniyadan keyin ochiladi</p><h2 className="mt-2 text-xl font-bold">{nextEpisode.episode}-qism</h2><div className="mt-5 flex gap-2"><button type="button" onClick={() => router.push(episodeHref(serial.slug, nextEpisode))} className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-4 py-3 font-semibold"><Play className="mr-2 inline h-4 w-4 fill-white" />Ochish</button><button type="button" onClick={() => setNextCountdown(null)} className="rounded-xl border border-white/15 px-4"><X className="h-4 w-4" /></button></div></div></div> : null}
@@ -76,9 +78,6 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <h1 className="text-2xl font-bold md:text-3xl">{serial.title} <span className="text-gray-400">{currentEpisode.episode}-qism</span></h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">{serial.dubbing ? <span className="inline-flex items-center gap-1.5 rounded-md bg-rose-500 px-2.5 py-1 font-bold text-white"><Mic className="h-3.5 w-3.5" />UZ</span> : null}{currentEpisode.airDate ? <span>{new Date(currentEpisode.airDate).toLocaleDateString("uz-UZ")}</span> : null}{currentEpisode.duration ? <><span>·</span><span>{currentEpisode.duration} daq</span></> : null}<span>·</span><span className="inline-flex items-center gap-1"><Eye className="h-4 w-4" />{formatViewCount(episodeViews)} ko‘rildi</span></p>
         </div>
-
-        <div id="yandex_rtb_R-A-19814476-1" />
-    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
 
         <div className="flex flex-col gap-3 border-y border-white/[.06] py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid h-12 grid-cols-2 divide-x divide-white/10 rounded-xl border border-white/[.07] bg-white/[.045] sm:w-[160px]">

@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import { Bookmark, CalendarDays, ChevronRight, Clock3, Eye, Film, Play, Star, Tag } from "lucide-react";
 import { formatDuration, formatViewCount } from "@/lib/utils";
 import { useSavedList } from "@/hooks/useSavedList";
@@ -67,9 +66,6 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
   const plotPreview = firstSentence(movie.description);
 
   return <div className="min-h-screen bg-[#090a10]">
-    <Script id="yandex-rtb-init" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: "window.yaContextCb = window.yaContextCb || [];" }} />
-    <Script src="https://yandex.ru/ads/system/context.js" strategy="afterInteractive" />
-
     <section className="relative overflow-hidden">
       {movie.backdropUrl ? <div className="absolute inset-0"><Image src={movie.backdropUrl} alt="" fill priority className="object-cover object-center opacity-35" sizes="100vw" /></div> : null}
       <div className="absolute inset-0 bg-[linear-gradient(90deg,#090a10_0%,rgba(9,10,16,.78)_52%,rgba(9,10,16,.48)_100%)]" />
@@ -110,9 +106,6 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
         </div>
       </div>
     </section>
-
-    <div id="yandex_rtb_R-A-19814476-1" />
-    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
 
     <div className="mx-auto max-w-[1400px] px-4 pb-16 md:px-8">
       <section className="rounded-2xl border border-white/10 bg-white/[.025] px-5 py-6 shadow-[0_14px_50px_rgba(64,25,110,.12)] md:px-8">
