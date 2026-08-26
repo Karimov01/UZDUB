@@ -33,6 +33,9 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
   const watchHref = firstEpisode ? `/serial/${serial.slug}/qism/${firstEpisode.season}/${firstEpisode.episode}` : `/serial/${serial.slug}/tomosha`;
   const similar = similarMovies.slice(0, 8);
 
+<div id="yandex_rtb_R-A-19814476-1" />
+    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
+  
   return <div className="min-h-screen bg-[#080a10] text-white">
     <section className="relative overflow-hidden border-b border-white/[.05]">
       {serial.backdropUrl ? <Image src={serial.backdropUrl} alt="" fill priority className="object-cover object-center opacity-20" sizes="100vw" /> : null}
