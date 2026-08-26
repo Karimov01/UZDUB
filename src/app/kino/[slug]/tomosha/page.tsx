@@ -6,7 +6,7 @@ import TomashaClient from "@/components/player/TomashaClient";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildWatchJsonLd, buildWatchMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

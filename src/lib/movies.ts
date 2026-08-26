@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { Episode, HeroMovieData, Movie, MovieCardData } from "@/types/movie";
-import { readMovies } from "@/lib/movies-store";
+import { readMovies, readPublishedMovieBySlug } from "@/lib/movies-store";
 
 // Baza + demo kinolar. React cache — bir render ichida bitta DB o'qish.
 // Baza uzilgan bo'lsa ham demo bilan ishlayveradi (try/catch).
@@ -22,13 +22,9 @@ export async function getPublishedMovies(): Promise<Movie[]> {
   return (await loadAll()).filter((m) => m.status === "PUBLISHED" && !m.isComingSoon);
 }
 
-export async function getMovieBySlug(slug: string): Promise<Movie | undefined> {
-  return (await getPublishedMovies()).find((m) => m.slug === slug);
-}
+export const getMovieBySlug = cache(async (slug: string): Promise<Movie | undefined> => readPublishedMovieBySlug(slug));
 
-export async function getSerialBySlug(slug: string): Promise<Movie | undefined> {
-  return (await getPublishedMovies()).find((m) => m.slug === slug && m.type === "SERIAL");
-}
+export const getSerialBySlug = cache(async (slug: string): Promise<Movie | undefined> => readPublishedMovieBySlug(slug, "SERIAL"));
 
 export async function getFeatured(): Promise<Movie[]> {
   return (await getPublishedMovies()).filter((m) => m.isFeatured);

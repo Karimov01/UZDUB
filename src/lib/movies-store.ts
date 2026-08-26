@@ -28,11 +28,9 @@ function ensureTable() {
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ`,
       sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_telegram_admin_notifications BOOLEAN NOT NULL DEFAULT false`,
       sql`CREATE TABLE IF NOT EXISTS user_content_lists (user_id TEXT NOT NULL, movie_id TEXT NOT NULL, list_type TEXT NOT NULL CHECK (list_type IN ('FAVORITE', 'WATCH_LATER')), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, movie_id, list_type))`,
-      sql`CREATE TABLE IF NOT EXISTS user_watch_progress (user_id TEXT NOT NULL, movie_id TEXT NOT NULL, episode_key TEXT NOT NULL DEFAULT '', position_seconds REAL NOT NULL DEFAULT 0, duration_seconds REAL NOT NULL DEFAULT 0, completed BOOLEAN NOT NULL DEFAULT false, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, movie_id, episode_key))`,
       sql`CREATE TABLE IF NOT EXISTS telegram_login_requests (id TEXT PRIMARY KEY, token_hash TEXT UNIQUE NOT NULL, completion_hash TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'PENDING', user_id TEXT, telegram_id TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL, verified_at TIMESTAMPTZ, completion_expires_at TIMESTAMPTZ, used_at TIMESTAMPTZ)`,
       ]);
       await sql`CREATE INDEX IF NOT EXISTS user_content_lists_user_type_idx ON user_content_lists (user_id, list_type, created_at DESC)`;
-      await sql`CREATE INDEX IF NOT EXISTS user_watch_progress_user_updated_idx ON user_watch_progress (user_id, updated_at DESC)`;
       // Ilgari yaratilgan yagona adminni bir marta avtomatik qabul qiluvchi qilamiz.
       await sql`UPDATE users SET receive_telegram_admin_notifications = true WHERE id = (SELECT id FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN') AND is_active = true ORDER BY created_at ASC LIMIT 1) AND NOT EXISTS (SELECT 1 FROM users WHERE receive_telegram_admin_notifications = true)`;
     })();
@@ -171,26 +169,6 @@ export async function toggleUserListItem(userId: string, movieId: string, type: 
   return true;
 }
 
-export type StoredWatchProgress = { movieId: string; episodeId?: string; positionSeconds: number; durationSeconds: number; completed: boolean; updatedAt: string };
-
-export async function saveWatchProgress(userId: string, input: Omit<StoredWatchProgress, "updatedAt">): Promise<StoredWatchProgress> {
-  await ensureTable(); const sql = db();
-  const episodeKey = input.episodeId ?? "";
-  const rows = await sql`INSERT INTO user_watch_progress (user_id, movie_id, episode_key, position_seconds, duration_seconds, completed) VALUES (${userId}, ${input.movieId}, ${episodeKey}, ${input.positionSeconds}, ${input.durationSeconds}, ${input.completed}) ON CONFLICT (user_id, movie_id, episode_key) DO UPDATE SET position_seconds = EXCLUDED.position_seconds, duration_seconds = EXCLUDED.duration_seconds, completed = EXCLUDED.completed, updated_at = now() RETURNING movie_id AS "movieId", NULLIF(episode_key, '') AS "episodeId", position_seconds AS "positionSeconds", duration_seconds AS "durationSeconds", completed, updated_at AS "updatedAt"` as StoredWatchProgress[];
-  return rows[0];
-}
-
-export async function getWatchProgress(userId: string, movieId: string, episodeId?: string): Promise<StoredWatchProgress | undefined> {
-  await ensureTable(); const sql = db();
-  const rows = await sql`SELECT movie_id AS "movieId", NULLIF(episode_key, '') AS "episodeId", position_seconds AS "positionSeconds", duration_seconds AS "durationSeconds", completed, updated_at AS "updatedAt" FROM user_watch_progress WHERE user_id = ${userId} AND movie_id = ${movieId} AND episode_key = ${episodeId ?? ""} LIMIT 1` as StoredWatchProgress[];
-  return rows[0];
-}
-
-export async function getWatchProgresses(userId: string, limit = 12): Promise<StoredWatchProgress[]> {
-  await ensureTable(); const sql = db();
-  return await sql`SELECT movie_id AS "movieId", NULLIF(episode_key, '') AS "episodeId", position_seconds AS "positionSeconds", duration_seconds AS "durationSeconds", completed, updated_at AS "updatedAt" FROM user_watch_progress WHERE user_id = ${userId} AND completed = false AND position_seconds > 0 ORDER BY updated_at DESC LIMIT ${limit}` as StoredWatchProgress[];
-}
-
 export type AppSettings = {
   siteName: string; siteDesc: string; maintenanceMode: boolean; registrationOpen: boolean;
   emailNotifications: boolean; pushNotifications: boolean; defaultLanguage: string;
@@ -235,6 +213,35 @@ export async function readMovies(): Promise<Movie[]> {
   const sql = db();
   const rows = (await sql`SELECT data FROM movies ORDER BY created_at DESC`) as { data: Movie }[];
   return rows.map((r) => r.data);
+}
+
+export async function readPublishedMovieBySlug(slug: string, type?: "MOVIE" | "SERIAL"): Promise<Movie | undefined> {
+  await ensureTable();
+  const sql = db();
+  const rows = type
+    ? await sql`SELECT data FROM movies WHERE slug = ${slug} AND data->>'status' = 'PUBLISHED' AND data->>'type' = ${type} AND COALESCE((data->>'isComingSoon')::boolean, false) = false LIMIT 1` as { data: Movie }[]
+    : await sql`SELECT data FROM movies WHERE slug = ${slug} AND data->>'status' = 'PUBLISHED' AND COALESCE((data->>'isComingSoon')::boolean, false) = false LIMIT 1` as { data: Movie }[];
+  return rows[0]?.data;
+}
+
+export async function readPublishedCatalog(
+  type: "MOVIE" | "SERIAL",
+  sort: "new" | "rating" | "random",
+  offset: number,
+  limit: number,
+): Promise<{ movies: Movie[]; total: number }> {
+  await ensureTable();
+  const sql = db();
+  const safeOffset = Math.max(0, Math.floor(offset));
+  const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+  const whereType = type;
+  const countRows = await sql`SELECT COUNT(*)::int AS count FROM movies WHERE data->>'status' = 'PUBLISHED' AND data->>'type' = ${whereType} AND COALESCE((data->>'isComingSoon')::boolean, false) = false` as { count: number }[];
+  const rows = sort === "rating"
+    ? await sql`SELECT data FROM movies WHERE data->>'status' = 'PUBLISHED' AND data->>'type' = ${whereType} AND COALESCE((data->>'isComingSoon')::boolean, false) = false ORDER BY COALESCE((data->>'imdbRating')::numeric, 0) DESC, COALESCE(data->>'publishedAt', data->>'createdAt', '') DESC, id ASC LIMIT ${safeLimit} OFFSET ${safeOffset}` as { data: Movie }[]
+    : sort === "random"
+      ? await sql`SELECT data FROM movies WHERE data->>'status' = 'PUBLISHED' AND data->>'type' = ${whereType} AND COALESCE((data->>'isComingSoon')::boolean, false) = false ORDER BY md5(id), id ASC LIMIT ${safeLimit} OFFSET ${safeOffset}` as { data: Movie }[]
+      : await sql`SELECT data FROM movies WHERE data->>'status' = 'PUBLISHED' AND data->>'type' = ${whereType} AND COALESCE((data->>'isComingSoon')::boolean, false) = false ORDER BY COALESCE(data->>'publishedAt', data->>'createdAt', '') DESC, id ASC LIMIT ${safeLimit} OFFSET ${safeOffset}` as { data: Movie }[];
+  return { movies: rows.map((row) => row.data), total: countRows[0]?.count ?? 0 };
 }
 
 export async function addMovie(movie: Movie): Promise<void> {

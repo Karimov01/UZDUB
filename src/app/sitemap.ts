@@ -6,8 +6,7 @@ import { episodePath, getEpisodeVideoData, getMovieVideoData, movieWatchPath } f
 // Sitemap nashr qilingan kontent bilan har doim birga yangilanishi kerak.
 // Statik build vaqtida hosil qilinganda Neon bazasiga keyin qo'shilgan kinolar
 // XML ro'yxatiga kirmay qolardi.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const movies = await getPublishedMovies();

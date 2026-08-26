@@ -3,15 +3,13 @@ import CatalogFilters from "@/components/catalog/CatalogFilters";
 import Pagination from "@/components/catalog/Pagination";
 import HomeMovieCard from "@/components/home/HomeMovieCard";
 import SeriesCard from "@/components/home/SeriesCard";
-import { getKinolar, getSerials } from "@/lib/movies";
-import { paginateCatalog, sortCatalog, type CatalogSort } from "@/lib/catalog";
+import { getCatalogPage, type CatalogSort } from "@/lib/catalog";
 
 export default async function CatalogPage({ kind, page, sort }: { kind: "movie" | "serial"; page: number; sort: CatalogSort }) {
   const isMovie = kind === "movie";
   const basePath = isMovie ? "/kino" : "/serial";
   const pageSize = isMovie ? 20 : 12;
-  const all = sortCatalog(isMovie ? await getKinolar() : await getSerials(), sort);
-  const catalog = paginateCatalog(all, page, pageSize);
+  const catalog = await getCatalogPage(kind, sort, page, pageSize);
   if (!Number.isInteger(page) || page < 1 || page > catalog.totalPages) notFound();
 
   return <div className="min-h-screen bg-[#0d0f10] py-8 sm:py-12">

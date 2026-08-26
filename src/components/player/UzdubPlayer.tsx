@@ -86,12 +86,11 @@ function ensureStyles() {
   }
 }
 
-type Props = { src?: string; poster?: string | null; movieId?: string; episodeId?: string; onEnded?: () => void };
+type Props = { src?: string; poster?: string | null; onEnded?: () => void };
 
-export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }: Props) {
+export default function UzdubPlayer({ src, poster, onEnded }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const onEndedRef = useRef(onEnded);
-  const embedSavedRef = useRef(false);
 
   useEffect(() => {
     onEndedRef.current = onEnded;
@@ -102,36 +101,13 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
     let player: PlayerInstance | null = null;
     let cancelled = false;
     let video: HTMLVideoElement | null = null;
-    // Birinchi progress 5-soniyada saqlanadi, keyingilari 60 soniya oralig'ida.
-    // Shu sabab foydalanuvchi qisqa tomosha qilib sahifadan chiqsa ham "Davom ettirish" paydo bo'ladi.
-    let lastSaved = -55;
-    const progressUrl = movieId ? `/api/profile/progress?movieId=${encodeURIComponent(movieId)}${episodeId ? `&episodeId=${encodeURIComponent(episodeId)}` : ""}` : null;
-    const resume = progressUrl ? fetch(progressUrl, { cache: "no-store" }).then((response) => response.ok ? response.json() : null).catch(() => null) : Promise.resolve(null);
-    const save = (completed = false) => {
-      if (!video || !movieId || !Number.isFinite(video.currentTime) || !Number.isFinite(video.duration)) return;
-      const positionSeconds = Math.max(0, Math.floor(video.currentTime));
-      const durationSeconds = Math.max(0, Math.floor(video.duration));
-      if (!durationSeconds) return;
-      void fetch("/api/profile/progress", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ movieId, episodeId, positionSeconds, durationSeconds, completed }) }).catch(() => {});
-    };
     const getVideoFromEvent = (event: Event): HTMLVideoElement | null => {
       const target = event.target;
       if (!(target instanceof HTMLVideoElement) || target.classList.contains("uzdub-ad-video")) return null;
       video = target;
       return target;
     };
-    const onTimeUpdate = (event: Event) => { const target = getVideoFromEvent(event); if (target && target.currentTime - lastSaved >= 60) { lastSaved = target.currentTime; save(); } };
-    const onPause = () => save();
-    const onVideoEnded = () => { save(true); onEndedRef.current?.(); };
-    const onPageHide = () => save();
-    const onMetadata = async () => {
-      const data = await resume;
-      const position = data?.progress?.positionSeconds;
-      if (!cancelled && video && typeof position === "number" && position > 5 && position < video.duration - 10) {
-        video.currentTime = position;
-        lastSaved = position;
-      }
-    };
+    const onVideoEnded = (event: Event) => { if (getVideoFromEvent(event)) onEndedRef.current?.(); };
 
     ensureStyles();
     loadScripts()
@@ -147,40 +123,22 @@ export default function UzdubPlayer({ src, poster, movieId, episodeId, onEnded }
       .catch(() => {});
 
     const root = ref.current;
-    const onMetadataCapture = (event: Event) => { if (getVideoFromEvent(event)) void onMetadata(); };
-    const onPauseCapture = (event: Event) => { if (getVideoFromEvent(event)) onPause(); };
-    const onEndedCapture = (event: Event) => { if (getVideoFromEvent(event)) onVideoEnded(); };
-    root.addEventListener("loadedmetadata", onMetadataCapture, true);
-    root.addEventListener("timeupdate", onTimeUpdate, true);
-    root.addEventListener("pause", onPauseCapture, true);
-    root.addEventListener("ended", onEndedCapture, true);
-    window.addEventListener("pagehide", onPageHide);
+    root.addEventListener("ended", onVideoEnded, true);
 
     return () => {
       cancelled = true;
-      if (video) onPause();
-      root.removeEventListener("loadedmetadata", onMetadataCapture, true);
-      root.removeEventListener("timeupdate", onTimeUpdate, true);
-      root.removeEventListener("pause", onPauseCapture, true);
-      root.removeEventListener("ended", onEndedCapture, true);
-      window.removeEventListener("pagehide", onPageHide);
+      root.removeEventListener("ended", onVideoEnded, true);
       try {
         player?.destroy();
       } catch {
         // ignore
       }
     };
-  }, [src, poster, movieId, episodeId]);
+  }, [src, poster]);
 
   const directSource = src && /\.(m3u8|mp4|webm|mov)(?:$|[?#])/i.test(src) ? src : undefined;
-  const isEmbedSource = Boolean(src && /(youtube\.com|youtu\.be|ok\.ru|odnoklassniki\.ru|mover\.uz)/i.test(src));
-  const saveEmbedStart = () => {
-    if (!isEmbedSource || !movieId || embedSavedRef.current) return;
-    embedSavedRef.current = true;
-    void fetch("/api/profile/progress", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ movieId, episodeId, positionSeconds: 1, durationSeconds: 0, completed: false }) }).catch(() => {});
-  };
   return (
-    <div ref={ref} onPointerDownCapture={saveEmbedStart} style={{ width: "100%", aspectRatio: "16 / 9" }} role="region" aria-label="Video player">
+    <div ref={ref} style={{ width: "100%", aspectRatio: "16 / 9" }} role="region" aria-label="Video player">
       <video
         className="uzdub-seo-video"
         controls

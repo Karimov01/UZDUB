@@ -1,5 +1,6 @@
 import type { Movie, MovieCardData } from "@/types/movie";
 import { toCardData } from "@/lib/movies";
+import { readPublishedCatalog } from "@/lib/movies-store";
 
 export type CatalogSort = "new" | "rating" | "random";
 
@@ -42,4 +43,9 @@ export function paginateCatalog<T>(items: T[], page: number, pageSize: number) {
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const start = (page - 1) * pageSize;
   return { items: items.slice(start, start + pageSize), totalPages };
+}
+
+export async function getCatalogPage(kind: "movie" | "serial", sort: CatalogSort, page: number, pageSize: number) {
+  const { movies, total } = await readPublishedCatalog(kind === "movie" ? "MOVIE" : "SERIAL", sort, (page - 1) * pageSize, pageSize);
+  return { items: movies.map(toCardData), totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 }

@@ -5,7 +5,7 @@ import { getSerialBySlug } from "@/lib/movies";
 import SerialTomashaClient from "@/components/player/SerialTomashaClient";
 import { buildMovieMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 // Bu eski umumiy tomosha marshruti qism sahifalaridan duplicate bo'lmasligi uchun
 // asosiy serial sahifasiga canonical qilinadi va indekslanmaydi.

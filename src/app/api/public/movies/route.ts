@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getPublishedMovies } from "@/lib/movies";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
+export const revalidate = 600;
 
 // Ochiq (auth'siz) — faqat nashr etilgan kinolar. Qidiruv (client) shu yerdan oladi.
 export async function GET() {
