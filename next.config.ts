@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "cdn.uzdub.com",
       },
+      {
+        protocol: "https",
+        hostname: "flagcdn.com",
+        pathname: "/w80/**",
+      },
     ],
   },
 };

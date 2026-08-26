@@ -28,7 +28,7 @@ export default function TelegramChannelButton() {
       <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/45 bg-white/20 shadow-[0_0_18px_rgba(255,255,255,.24)] sm:h-12 sm:w-12">
         <Send className="h-5 w-5 fill-white text-white sm:h-6 sm:w-6" />
       </span>
-      <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-base font-bold tracking-tight sm:text-lg lg:static lg:ml-3 lg:flex-1 lg:translate-x-0 lg:text-left">Telegram kanal</span>
+      <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-base font-bold tracking-tight sm:text-lg lg:static lg:ml-3 lg:flex-1 lg:translate-x-0 lg:text-left">Telegramga qo&apos;shiling</span>
       <ChevronRight className="relative h-6 w-6 shrink-0 text-white transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
     </a>
   );

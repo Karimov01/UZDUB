@@ -10,7 +10,8 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
   const isTechnicalAuthPage = pathname === "/kirish" || pathname.startsWith("/auth/");
-  const shouldShowAds = !isAdmin && !isTechnicalAuthPage;
+  const isWatchPage = pathname.includes("/tomosha") || pathname.includes("/qism/");
+  const shouldShowAds = !isAdmin && !isTechnicalAuthPage && !isWatchPage;
 
   if (isAdmin) return <>{children}</>;
 

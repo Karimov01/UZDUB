@@ -9,11 +9,15 @@ export default function ExpandableText({
   className,
   style,
   lines = 3,
+  alwaysShowToggle = false,
+  buttonClassName,
 }: {
   text: string;
   className?: string;
   style?: React.CSSProperties;
   lines?: number;
+  alwaysShowToggle?: boolean;
+  buttonClassName?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -39,11 +43,11 @@ export default function ExpandableText({
       <p ref={ref} className={className} style={{ ...style, ...clampStyle }}>
         {text}
       </p>
-      {(truncated || expanded) && (
+      {(alwaysShowToggle || truncated || expanded) && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-1 inline-flex items-center gap-1 text-sm font-semibold transition-opacity hover:opacity-80"
+          className={buttonClassName ?? "mt-1 inline-flex items-center gap-1 text-sm font-semibold transition-opacity hover:opacity-80"}
           style={{ color: "var(--accent-violet)" }}
         >
           {expanded ? "Yashirish" : "Batafsil"}

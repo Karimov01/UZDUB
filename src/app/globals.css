@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+.watch-action { display:flex; min-height:48px; align-items:center; justify-content:center; gap:.5rem; border-radius:.75rem; border:1px solid rgba(255,255,255,.07); background:rgba(255,255,255,.045); padding:.65rem .9rem; font-size:.78rem; font-weight:600; color:#fff; transition:background .2s ease; }
+.watch-action:hover { background:rgba(255,255,255,.09); }
+.watch-action svg { width:1.1rem; height:1.1rem; }
+.watch-recommendations { scrollbar-width:none; }
+.watch-recommendations::-webkit-scrollbar { display:none; }
+
 @media (min-width: 1024px) {
   .min-h-screen main .mt-5.grid {
     display: block !important;

@@ -1,47 +1,80 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ChevronLeft, Sparkles, VideoOff } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Download, Eye, MessageCircle, PlayCircle, Share2, ThumbsDown, ThumbsUp, VideoOff } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
 import WatchRecommendations from "@/components/player/WatchRecommendations";
-import EngagementPanel from "@/components/engagement/EngagementPanel";
 import TelegramChannelButton from "@/components/shared/TelegramChannelButton";
+import WatchComments, { type WatchReaction } from "@/components/player/WatchComments";
 import { formatViewCount } from "@/lib/utils";
 
-function formatDuration(minutes?: number) { if (!minutes) return undefined; return minutes >= 60 ? `${Math.floor(minutes / 60)} soat ${minutes % 60 ? `${minutes % 60} daqiqa` : ""}`.trim() : `${minutes} daqiqa`; }
+function duration(value?: number) { if (!value) return ""; return value >= 60 ? `${Math.floor(value / 60)} soat ${value % 60 ? `${value % 60} daqiqa` : ""}`.trim() : `${value} daqiqa`; }
+function isDirect(url?: string) { return Boolean(url && /\.(mp4|m3u8|webm|mov)(?:$|[?#])/i.test(url)); }
 
 export default function TomashaClient({ movie, recommendations = [] }: { movie: Movie; recommendations?: Movie[] }) {
+  const commentsRef = useRef<HTMLElement>(null);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [views, setViews] = useState(movie.viewCount ?? 0);
-  const metadata = [movie.year, formatDuration(movie.duration), `${formatViewCount(views)} marta ko'rildi`].filter(Boolean);
+  const [reaction, setReaction] = useState<WatchReaction>({ likes: 0, dislikes: 0, myReaction: "", canVote: false });
   const poster = movie.posterUrl || movie.backdropUrl;
+  const directVideo = isDirect(movie.videoUrl);
 
-  // Tomosha URL'iga birinchi kirish kontentning bitta haqiqiy ko'rishi hisoblanadi.
-  // Shu kalit bir sessiyada yangilash yoki navigatsiya sababli sonni sun'iy oshirmaydi.
   useEffect(() => {
     const key = `uzdub_watch_page_viewed_${movie.id}`;
-    try {
-      if (sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key, "1");
-    } catch {
-      // sessionStorage bloklangan bo'lsa, joriy komponent ochilishida bitta so'rov yuboriladi.
-    }
-    void fetch(`/api/public/view/${encodeURIComponent(movie.id)}`, { method: "POST", keepalive: true })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => { if (typeof data?.count === "number") setViews(data.count); })
-      .catch(() => {});
+    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch {}
+    void fetch(`/api/public/view/${encodeURIComponent(movie.id)}`, { method: "POST", keepalive: true }).then((response) => response.ok ? response.json() : null).then((value) => { if (typeof value?.count === "number") setViews(value.count); }).catch(() => {});
   }, [movie.id]);
 
-  return <div className="min-h-screen" style={{ background: "#000" }}>
-    <div className="flex items-center gap-3 px-4 py-3" style={{ background: "#0a0a0f", borderBottom: "1px solid var(--border)" }}><Link href={`/kino/${movie.slug}`} className="flex items-center gap-2 text-white transition-colors hover:text-gray-300"><ChevronLeft className="h-5 w-5" /><span className="text-sm font-medium">{movie.title}</span></Link><span className="hidden text-xs sm:block" style={{ color: "var(--text-muted)" }}>Premium tomosha rejimi</span></div>
-    <main className="mx-auto max-w-[1400px] px-3 pb-6 pt-5 md:px-5 md:pt-8"><div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_350px]"><div className="min-w-0">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-violet-200"><span className="rounded-full px-2.5 py-1" style={{ background: "rgba(124,58,237,.2)", border: "1px solid rgba(196,132,252,.28)" }}>✦ PREMIUM PLAYER</span><span style={{ color: "var(--text-muted)" }}>HD sifatda tomosha qiling</span></div>
-      <div className="relative rounded-2xl p-px md:rounded-3xl" style={{ background: "linear-gradient(135deg,rgba(192,132,252,.9),rgba(124,58,237,.15) 42%,rgba(236,72,153,.75))", boxShadow: "0 0 22px rgba(124,58,237,.42),0 0 65px rgba(139,92,246,.18)" }}><div className="absolute -inset-4 -z-10 rounded-[2.2rem] opacity-70 blur-3xl" style={{ background: "radial-gradient(ellipse at 15% 15%,rgba(168,85,247,.46),transparent 45%),radial-gradient(ellipse at 85% 90%,rgba(236,72,153,.28),transparent 48%)" }} /><div className="overflow-hidden rounded-[15px] bg-black md:rounded-[23px]">{movie.videoUrl ? <UzdubPlayer src={movie.videoUrl} poster={movie.backdropUrl || movie.posterUrl} /> : <div className="flex w-full flex-col items-center justify-center gap-3 text-center" style={{ aspectRatio: "16 / 9", background: "#0d0d12" }}><VideoOff className="h-10 w-10" style={{ color: "var(--text-muted)" }} /><p className="font-medium text-white">Video havolasi qo&apos;shilmagan</p></div>}</div></div>
-      <section className="pt-5"><h1 className="text-2xl font-bold text-white md:text-3xl" style={{ fontFamily: "var(--font-display)" }}>{movie.title}</h1><div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm" style={{ color: "var(--text-muted)" }}><span className="rounded-md px-2 py-0.5 text-xs font-semibold text-violet-100" style={{ background: "rgba(124,58,237,.46)" }}>{movie.dubbing || "O'zbek tilida"}</span>{metadata.map((item) => <span key={item}>• {item}</span>)}</div></section>
-      <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_250px]"><section className="rounded-2xl p-4 md:p-5" style={{ background: "linear-gradient(145deg,rgba(25,18,42,.82),rgba(11,12,21,.94))", border: "1px solid rgba(167,139,250,.2)" }}><div className="flex items-start gap-3">{poster ? <div className="relative h-24 w-[68px] shrink-0 overflow-hidden rounded-lg bg-black/30"><Image src={poster} alt="" fill sizes="68px" className="object-cover" /></div> : <div className="h-24 w-[68px] shrink-0 rounded-lg bg-gradient-to-br from-violet-950 to-slate-950" />}<div className="min-w-0"><div className="flex flex-wrap items-center gap-2 text-xs text-violet-200"><span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(124,58,237,.16)" }}><Sparkles className="h-3.5 w-3.5" />Premium tomosha</span>{movie.imdbRating ? <span>IMDb {movie.imdbRating.toFixed(1)}</span> : null}</div><h2 className="mt-3 text-lg font-bold text-white">{movie.title}</h2><p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>{[movie.country, movie.genres?.slice(0, 3).map((genre) => genre.name).join(", ")].filter(Boolean).join(" · ")}</p><Link href={`/kino/${movie.slug}`} className="mt-4 inline-flex items-center gap-1.5 text-sm text-violet-200 hover:text-white"><ChevronLeft className="h-4 w-4" />Sahifaga qaytish</Link></div></div></section><TelegramChannelButton /></div>
-    </div><WatchRecommendations movies={recommendations} /></div></main>
-    <EngagementPanel content={movie} />
+  const share = async () => {
+    const payload = { title: `${movie.title} — UZDUB Play`, url: window.location.href };
+    try { if (navigator.share) await navigator.share(payload); else { await navigator.clipboard.writeText(payload.url); alert("Havola nusxalandi"); } } catch {}
+  };
+
+  return <div className="min-h-screen bg-[#03040a] text-white">
+    <main className="mx-auto w-full max-w-[1320px] px-4 pb-10 pt-5 sm:px-6 md:pt-8">
+      <section className="mb-5 flex gap-4 md:gap-6" aria-label="Kino haqida qisqa ma'lumot">
+        {poster ? <div className="relative h-[132px] w-[92px] shrink-0 overflow-hidden rounded-xl border border-white/10 md:h-[146px] md:w-[104px]"><Image src={poster} alt={`${movie.title} posteri`} fill sizes="104px" className="object-cover" priority /></div> : null}
+        <div className="min-w-0 py-1">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{movie.title} <span className="text-slate-400">{movie.year ? `(${movie.year})` : ""}</span></h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+            {movie.imdbRating ? <span className="rounded bg-[#f5c518] px-2 py-1 text-xs font-black text-black">IMDb</span> : null}
+            {movie.imdbRating ? <b className="text-sm">{movie.imdbRating.toFixed(1)}</b> : null}
+            {movie.genres?.slice(0, 3).map((genre) => <span key={genre.id} className="rounded-full border border-white/10 bg-white/[.06] px-3 py-1 text-xs text-slate-200">{genre.name}</span>)}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">{duration(movie.duration) && <span>{duration(movie.duration)}</span>} {movie.country && <span>{movie.country}</span>}<span>HD</span></div>
+          <p className="mt-3 hidden max-w-3xl truncate text-sm text-slate-400 sm:block">{movie.shortDesc || movie.description}</p>
+        </div>
+      </section>
+
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_70px_rgba(76,29,149,.18)]">
+        {movie.videoUrl ? <UzdubPlayer src={movie.videoUrl} poster={movie.backdropUrl || movie.posterUrl} /> : <div className="flex aspect-video items-center justify-center gap-3 text-slate-400"><VideoOff className="h-9 w-9" />Video havolasi qo&apos;shilmagan</div>}
+      </div>
+
+      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="grid h-12 grid-cols-2 divide-x divide-white/10 rounded-xl border border-white/[.07] bg-white/[.045] md:w-[160px]">
+          <button onClick={() => document.getElementById("watch-like")?.click()} className="flex items-center justify-center gap-2" aria-label="Yoqdi"><ThumbsUp className="h-5 w-5" />{reaction.likes}</button>
+          <button onClick={() => document.getElementById("watch-dislike")?.click()} className="flex items-center justify-center gap-2" aria-label="Yoqmadi"><ThumbsDown className="h-5 w-5" />{reaction.dislikes}</button>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:flex">
+          {movie.trailerUrl ? <a href={movie.trailerUrl} target="_blank" rel="noopener noreferrer" className="watch-action"><PlayCircle />Treyler</a> : null}
+          {directVideo ? <a href={movie.videoUrl} download className="watch-action"><Download />Yuklab olish</a> : null}
+          <button onClick={() => commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} className="watch-action"><MessageCircle />Izohlar</button>
+          <button onClick={() => void share()} className="watch-action"><Share2 />Ulashish</button>
+          <div className="watch-action" aria-label={`${formatViewCount(views)} marta ko'rildi`}><Eye />{formatViewCount(views)} ko&apos;rildi</div>
+        </div>
+      </div>
+
+      <div className="mt-4 w-full"><TelegramChannelButton /></div>
+
+      <section className="mt-5 rounded-2xl border border-white/[.08] bg-white/[.025] p-4 md:p-5">
+        <button className="flex w-full items-center justify-between text-left" onClick={() => setDescriptionOpen((v) => !v)} aria-expanded={descriptionOpen} aria-label={descriptionOpen ? "Tavsifni yopish" : "Tavsifni ochish"}><h2 className="text-base font-bold">Tavsif</h2><ChevronDown className={`h-5 w-5 text-slate-400 transition ${descriptionOpen ? "rotate-180" : ""}`} /></button>
+        {descriptionOpen && <p className="mt-3 text-sm leading-6 text-slate-400">{movie.description}</p>}
+      </section>
+
+      <WatchComments ref={commentsRef} movie={movie} onReaction={setReaction} />
+      <WatchRecommendations movies={recommendations} />
+    </main>
   </div>;
 }
