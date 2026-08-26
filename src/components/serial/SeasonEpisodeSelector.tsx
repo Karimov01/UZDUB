@@ -6,6 +6,8 @@ import { ArrowDownUp, Clapperboard, Layers3, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Episode } from "@/types/movie";
 
+const INITIAL_VISIBLE_EPISODES = 20;
+
 type Props = {
   slug: string;
   episodes: Episode[];
@@ -63,6 +65,7 @@ export default function SeasonEpisodeSelector({
     activeSeason && groups.some((group) => group.season === activeSeason) ? activeSeason : groups[0]?.season,
   );
   const [descending, setDescending] = useState(false);
+  const [showAllEpisodes, setShowAllEpisodes] = useState((activeEpisode ?? 0) > INITIAL_VISIBLE_EPISODES);
 
   useEffect(() => {
     if (activeSeason && groups.some((group) => group.season === activeSeason)) {
@@ -74,6 +77,12 @@ export default function SeasonEpisodeSelector({
 
   const current = groups.find((group) => group.season === selectedSeason) ?? groups[0];
   const orderedEpisodes = descending ? [...current.episodes].reverse() : current.episodes;
+  const visibleEpisodes = showAllEpisodes ? orderedEpisodes : orderedEpisodes.slice(0, INITIAL_VISIBLE_EPISODES);
+  const episodeToggle = current.episodes.length > INITIAL_VISIBLE_EPISODES ? (
+    <button type="button" onClick={() => setShowAllEpisodes((value) => !value)} className="mt-4 w-full rounded-xl border border-white/15 bg-white/[.04] px-4 py-3 text-sm font-semibold text-white transition hover:border-fuchsia-400/50 hover:bg-white/[.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400">
+      {showAllEpisodes ? "Kamroq ko‘rsatish" : `Yana ko‘rsatish (${current.episodes.length - INITIAL_VISIBLE_EPISODES})`}
+    </button>
+  ) : null;
   const seasons = (
     <div className="mb-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {groups.map((group) => {
@@ -82,7 +91,7 @@ export default function SeasonEpisodeSelector({
           <button
             key={group.season}
             type="button"
-            onClick={() => setSelectedSeason(group.season)}
+            onClick={() => { setSelectedSeason(group.season); setShowAllEpisodes(Boolean(activeSeason === group.season && (activeEpisode ?? 0) > INITIAL_VISIBLE_EPISODES)); }}
             className="shrink-0 rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
             style={{
               background: active ? "rgba(124,58,237,.38)" : "rgba(255,255,255,.04)",
@@ -115,7 +124,7 @@ export default function SeasonEpisodeSelector({
         </div>
         {seasons}
         <div className="max-h-[500px] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(167,139,250,.6)_transparent]">
-          {current.episodes.map((episode) => {
+          {visibleEpisodes.map((episode) => {
             const selected = episode.season === activeSeason && episode.episode === activeEpisode;
             return (
               <Link
@@ -141,6 +150,7 @@ export default function SeasonEpisodeSelector({
             );
           })}
         </div>
+        {episodeToggle}
       </section>
     );
   }
@@ -171,7 +181,7 @@ export default function SeasonEpisodeSelector({
               <button
                 key={group.season}
                 type="button"
-                onClick={() => setSelectedSeason(group.season)}
+                onClick={() => { setSelectedSeason(group.season); setShowAllEpisodes(Boolean(activeSeason === group.season && (activeEpisode ?? 0) > INITIAL_VISIBLE_EPISODES)); }}
                 className={`shrink-0 rounded-lg border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400 ${active ? "border-white/45 bg-white/[.06] text-white" : "border-white/15 bg-transparent text-violet-200 hover:bg-white/[.04]"}`}
               >
                 {group.season}-fasl
@@ -180,7 +190,7 @@ export default function SeasonEpisodeSelector({
           })}
         </div>
         <div className="grid grid-cols-3 gap-3 border-t border-white/10 pt-4 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
-          {orderedEpisodes.map((episode) => {
+          {visibleEpisodes.map((episode) => {
             const selected = episode.season === activeSeason && episode.episode === activeEpisode;
             return (
               <Link
@@ -197,6 +207,7 @@ export default function SeasonEpisodeSelector({
             );
           })}
         </div>
+        {episodeToggle}
       </div>
     </section>
   );

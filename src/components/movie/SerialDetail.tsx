@@ -2,149 +2,86 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Play, Plus, Heart, Star, Eye, Film, Calendar, Globe, Mic, Tv, Check } from "lucide-react";
-import { formatViewCount } from "@/lib/utils";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import { fadeInUp, staggerChildren } from "@/lib/animations";
-import MovieCard from "@/components/movie/MovieCard";
+import { Bookmark, CalendarDays, ChevronDown, Eye, Film, Layers3, Play, Tag } from "lucide-react";
+import { useState } from "react";
 import { useSavedList } from "@/hooks/useSavedList";
-import ExpandableText from "@/components/ui/ExpandableText";
+import { formatViewCount } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
+import SeriesCard from "@/components/home/SeriesCard";
+
+const COUNTRY_CODES: Record<string, string> = {
+  "janubiy koreya": "kr", koreya: "kr", "south korea": "kr", turkiya: "tr", turkey: "tr",
+  aqsh: "us", amerika: "us", "amerika qo'shma shtatlari": "us", usa: "us",
+  "buyuk britaniya": "gb", angliya: "gb", uk: "gb", hindiston: "in", xitoy: "cn",
+  yaponiya: "jp", rossiya: "ru", fransiya: "fr", germaniya: "de", ispaniya: "es",
+  kanada: "ca", "o'zbekiston": "uz", uzbekiston: "uz", qozogiston: "kz",
+};
+
+function countryCode(country?: string) {
+  return COUNTRY_CODES[country?.split(/[,/·;]/)[0]?.trim().toLocaleLowerCase("uz") ?? ""];
+}
 
 export default function SerialDetail({ serial, similarMovies = [] }: { serial: Movie; similarMovies?: Movie[] }) {
-  const similar = similarMovies.slice(0, 6);
-
-  const fav = useSavedList("favorites");
-  const later = useSavedList("watchLater");
-  const isFav = fav.has(serial.id);
-  const isLater = later.has(serial.id);
-
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
   const episodes = normalizeEpisodes(serial.episodes ?? []);
   const firstEpisode = episodes[0];
+  const later = useSavedList("watchLater");
+  const isLater = later.has(serial.id);
+  const seasons = new Set(episodes.map((episode) => episode.season)).size || 1;
+  const flag = countryCode(serial.country);
+  const watchHref = firstEpisode ? `/serial/${serial.slug}/qism/${firstEpisode.season}/${firstEpisode.episode}` : `/serial/${serial.slug}/tomosha`;
+  const similar = similarMovies.slice(0, 8);
 
-  return (
-    <div style={{ background: "var(--bg-primary)" }}>
-      {/* Hero */}
-      <div className="relative" style={{ minHeight: "70vh" }}>
-        {serial.backdropUrl && (
-          <div className="absolute inset-0">
-            <Image src={serial.backdropUrl} alt={serial.title} fill priority className="object-cover object-top" sizes="100vw" />
+  return <div className="min-h-screen bg-[#080a10] text-white">
+    <section className="relative overflow-hidden border-b border-white/[.05]">
+      {serial.backdropUrl ? <Image src={serial.backdropUrl} alt="" fill priority className="object-cover object-center opacity-20" sizes="100vw" /> : null}
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#080a10_0%,rgba(8,10,16,.9)_50%,rgba(8,10,16,.68)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(0deg,#080a10_0%,transparent_60%,rgba(8,10,16,.5)_100%)]" />
+      <div className="relative mx-auto grid max-w-[1400px] gap-7 px-4 pb-9 pt-7 md:px-8 md:py-10 lg:grid-cols-[270px_minmax(0,1fr)] lg:items-center lg:gap-11">
+        <div className="mx-auto w-full max-w-[230px] lg:mx-0 lg:max-w-[270px]">
+          <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/15 bg-[#131620] shadow-2xl">
+            {serial.posterUrl ? <Image src={serial.posterUrl} alt={serial.title} fill priority className="object-contain" sizes="(max-width:1024px) 230px,270px" /> : <div className="flex h-full items-center justify-center"><Film className="h-14 w-14 text-white/25" /></div>}
           </div>
-        )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(10,10,15,0.95) 0%, rgba(10,10,15,0.6) 60%, rgba(10,10,15,0.2) 100%)" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,15,1) 0%, transparent 60%)" }} />
-
-        <div className="relative max-w-[1400px] mx-auto px-4 md:px-8 pt-10 pb-14 flex gap-8 items-end min-h-[70vh]">
-          <div className="hidden md:block shrink-0 w-44 rounded-xl overflow-hidden shadow-2xl" style={{ border: "1px solid var(--border)" }}>
-            {serial.posterUrl ? (
-              <Image src={serial.posterUrl} alt={serial.title} width={176} height={264} className="object-cover w-full" />
-            ) : (
-              <div className="w-full aspect-[2/3] flex items-center justify-center" style={{ background: "var(--bg-tertiary)" }}>
-                <Film className="h-10 w-10 text-gray-600" />
-              </div>
-            )}
+        </div>
+        <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
+          <span className="rounded-md bg-fuchsia-600/80 px-2 py-1 text-xs font-semibold">Serial</span>
+          <h1 className="mt-3 text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl">{serial.title}{serial.year ? <span className="text-gray-400"> ({serial.year})</span> : null}</h1>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            {serial.imdbRating ? <><span className="rounded bg-[#f5c518] px-1.5 py-1 text-xs font-black text-black">IMDb</span><b>{serial.imdbRating.toFixed(1)}</b></> : null}
+            {serial.internalRating ? <><span className="rounded bg-blue-500 px-1.5 py-1 text-xs font-black">MDL</span><b>{serial.internalRating.toFixed(1)}</b></> : null}
           </div>
-
-          <motion.div variants={staggerChildren} initial="hidden" animate="visible" className="flex-1 max-w-xl">
-            <motion.div variants={fadeInUp} className="flex flex-wrap gap-2 mb-3">
-              {serial.genres?.map((g) => <Badge key={g.id} variant="purple">{g.name}</Badge>)}
-              {serial.year && <Badge variant="default">{serial.year}</Badge>}
-              <Badge variant="pink">Serial</Badge>
-            </motion.div>
-
-            <motion.h1 variants={fadeInUp} className="font-bold text-white mb-1" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.6rem, 3.5vw, 2.5rem)" }}>
-              {serial.title}
-            </motion.h1>
-            {serial.originalTitle && (
-              <motion.p variants={fadeInUp} className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>
-                {serial.originalTitle}
-              </motion.p>
-            )}
-
-            <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-4 flex-wrap">
-              {serial.imdbRating && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg" style={{ background: "rgba(245,197,24,0.12)", border: "1px solid rgba(245,197,24,0.3)" }}>
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-yellow-400">{serial.imdbRating.toFixed(1)}</span>
-                  <span className="text-xs text-gray-400">IMDb</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1 text-gray-400 text-sm">
-                <Eye className="h-4 w-4" />
-                {formatViewCount(serial.viewCount ?? 0)} ko&apos;rildi
-              </div>
-            </motion.div>
-
-            <motion.div variants={fadeInUp} className="mb-4">
-              <ExpandableText
-                text={serial.description}
-                className="text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              />
-            </motion.div>
-
-            {/* Meta */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-2 gap-2 mb-5">
-              {[
-                { icon: Calendar, label: "Yil", value: serial.year?.toString() },
-                { icon: Globe, label: "Davlat", value: serial.country },
-                { icon: Tv, label: "Til", value: serial.language },
-                { icon: Mic, label: "Dublyaj", value: serial.dubbing },
-              ].filter((item) => item.value).map(({ icon: Icon, label, value }) => (
-                <div key={label} className="px-3 py-2 rounded-xl" style={{ background: "var(--bg-glass)", border: "1px solid var(--border)" }}>
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <Icon className="h-3.5 w-3.5" style={{ color: "var(--accent-violet)" }} />
-                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</span>
-                  </div>
-                  <p className="text-sm font-medium text-white">{value}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.div variants={fadeInUp} className="flex gap-3 flex-wrap">
-              <Link href={firstEpisode ? `/serial/${serial.slug}/qism/${firstEpisode.season}/${firstEpisode.episode}` : `/serial/${serial.slug}/tomosha`}>
-                <Button size="lg"><Play className="h-5 w-5 fill-white" />Ko&apos;rishni boshlash</Button>
-              </Link>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => fav.toggle(serial.id)}
-                style={isFav ? { background: "rgba(236,72,153,0.15)", borderColor: "rgba(236,72,153,0.5)", color: "#EC4899" } : undefined}
-              >
-                <Heart className={isFav ? "h-5 w-5 fill-current" : "h-5 w-5"} />
-                {isFav ? "Sevimlida" : "Sevimli"}
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => later.toggle(serial.id)}
-                style={isLater ? { background: "rgba(124,58,237,0.15)", borderColor: "rgba(124,58,237,0.5)", color: "#A78BFA" } : undefined}
-              >
-                {isLater ? <Check className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                {isLater ? "Ro'yxatda" : "Keyin ko'raman"}
-              </Button>
-            </motion.div>
-          </motion.div>
+          <p className="mt-5 max-w-4xl text-sm leading-6 text-gray-300 md:text-base md:leading-7">{serial.shortDesc || serial.description}</p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <Link href={watchHref} className="inline-flex h-12 min-w-[220px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-7 font-semibold shadow-lg shadow-fuchsia-950/30"><Play className="h-5 w-5 fill-white" />Tomosha qilish</Link>
+            {later.isAuthenticated ? <button type="button" onClick={() => later.toggle(serial.id)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[.04] px-5 font-medium hover:border-fuchsia-400/50"><Bookmark className={isLater ? "h-5 w-5 fill-fuchsia-400 text-fuchsia-400" : "h-5 w-5"} />{isLater ? "Saqlangan" : "Keyin ko‘raman"}</button> : null}
+          </div>
+          <div className="no-scrollbar mt-7 flex w-full snap-x gap-2 overflow-x-auto pb-2 text-left lg:gap-0 lg:overflow-visible">
+            {[
+              { icon: CalendarDays, label: "Yil", value: serial.year?.toString() },
+              { icon: Layers3, label: "Fasl · epizod", value: `${seasons} · ${episodes.length}` },
+              { icon: null, label: "Mamlakat", value: serial.country },
+              { icon: Tag, label: "Janrlar", value: serial.genres?.map((genre) => genre.name).join(", ") },
+              { icon: Eye, label: "Ko‘rildi", value: `${formatViewCount(serial.viewCount ?? 0)} marta` },
+            ].filter((item) => item.value).map(({ icon: Icon, label, value }) => <div key={label} className="flex min-w-[155px] shrink-0 snap-start items-center gap-3 rounded-xl border border-white/10 bg-black/25 px-4 py-3 lg:min-w-0 lg:rounded-none lg:border-y-0 lg:border-l-0 lg:bg-transparent lg:px-6 first:lg:pl-0 last:lg:border-r-0">
+              {label === "Mamlakat" && flag ? <Image src={`https://flagcdn.com/w80/${flag}.png`} alt={`${value} bayrog‘i`} width={36} height={24} className="h-6 w-9 rounded-sm object-cover" /> : Icon ? <Icon className="h-7 w-7 shrink-0 text-gray-400" /> : null}
+              <div className="min-w-0"><p className="text-[11px] text-gray-500">{label}</p><p className="mt-1 truncate text-sm font-semibold">{value}</p></div>
+            </div>)}
+          </div>
         </div>
       </div>
+    </section>
 
-      {episodes.length > 0 && <SeasonEpisodeSelector slug={serial.slug} episodes={episodes} title={serial.title} />}
+    {firstEpisode ? <section className="mx-auto max-w-[1400px] px-4 pt-8 md:px-8">
+      <div className="mb-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-4 md:p-5">
+        <button type="button" onClick={() => setDescriptionOpen((value) => !value)} className="flex w-full items-center justify-between text-left" aria-expanded={descriptionOpen}><h2 className="font-bold">Tavsif</h2><ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${descriptionOpen ? "rotate-180" : ""}`} /></button>
+        {descriptionOpen ? <p className="mt-3 text-sm leading-6 text-gray-400 md:text-base">{serial.description}</p> : null}
+      </div>
+      <Link href={watchHref} className="group relative block aspect-video overflow-hidden rounded-2xl border border-white/15 bg-black">{(firstEpisode.previewUrl || serial.backdropUrl) ? <Image src={firstEpisode.previewUrl || serial.backdropUrl!} alt="1-qism" fill className="object-cover" sizes="100vw" /> : null}<span className="absolute inset-0 bg-black/20" /><span className="absolute inset-0 flex items-center justify-center"><span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-pink-500 shadow-xl transition-transform group-hover:scale-105"><Play className="ml-1 h-7 w-7 fill-white" /></span></span></Link>
+    </section> : null}
 
-      {/* Similar serials */}
-      {similar.length > 0 && (
-        <section className="max-w-[1400px] mx-auto px-4 md:px-8 pb-10">
-          <h2 className="text-xl font-bold text-white mb-5" style={{ fontFamily: "var(--font-display)" }}>
-            O&apos;xshash seriallar
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {similar.map((m) => <MovieCard key={m.id} movie={m} />)}
-          </div>
-        </section>
-      )}
-      <div className="h-12" />
-    </div>
-  );
+    {episodes.length ? <SeasonEpisodeSelector slug={serial.slug} episodes={episodes} title={serial.title} /> : null}
+
+    {similar.length ? <section className="mx-auto max-w-[1400px] px-4 pb-12 md:px-8"><h2 className="mb-4 text-xl font-bold">O‘xshash seriallar</h2><div className="no-scrollbar flex snap-x gap-3 overflow-x-auto pb-2">{similar.map((item) => <SeriesCard key={item.id} serial={item} />)}</div></section> : null}
+  </div>;
 }
