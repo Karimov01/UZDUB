@@ -9,6 +9,7 @@ import WatchRecommendations from "@/components/player/WatchRecommendations";
 import TelegramChannelButton from "@/components/shared/TelegramChannelButton";
 import WatchComments, { type WatchReaction } from "@/components/player/WatchComments";
 import { formatViewCount } from "@/lib/utils";
+import Script from "next/script";
 
 function duration(value?: number) { if (!value) return ""; return value >= 60 ? `${Math.floor(value / 60)} soat ${value % 60 ? `${value % 60} daqiqa` : ""}`.trim() : `${value} daqiqa`; }
 function isDirect(url?: string) { return Boolean(url && /\.(mp4|m3u8|webm|mov)(?:$|[?#])/i.test(url)); }
@@ -47,6 +48,9 @@ export default function TomashaClient({ movie, recommendations = [] }: { movie: 
           <p className="mt-3 hidden max-w-3xl truncate text-sm text-slate-400 sm:block">{movie.shortDesc || movie.description}</p>
         </div>
       </section>
+
+      <div id="yandex_rtb_R-A-19814476-1" />
+    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_70px_rgba(76,29,149,.18)]">
         {movie.videoUrl ? <UzdubPlayer src={movie.videoUrl} poster={movie.backdropUrl || movie.posterUrl} /> : <div className="flex aspect-video items-center justify-center gap-3 text-slate-400"><VideoOff className="h-9 w-9" />Video havolasi qo&apos;shilmagan</div>}
