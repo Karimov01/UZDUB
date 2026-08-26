@@ -11,6 +11,7 @@ import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/Se
 import WatchComments, { type WatchReaction } from "@/components/player/WatchComments";
 import { formatViewCount } from "@/lib/utils";
 import { isPublicDirectVideoUrl } from "@/lib/video-seo";
+import Script from "next/script";
 
 function episodeHref(slug: string, episode: Episode) {
   return `/serial/${slug}/qism/${episode.season}/${episode.episode}`;
@@ -75,6 +76,9 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
           <h1 className="text-2xl font-bold md:text-3xl">{serial.title} <span className="text-gray-400">{currentEpisode.episode}-qism</span></h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">{serial.dubbing ? <span className="inline-flex items-center gap-1.5 rounded-md bg-rose-500 px-2.5 py-1 font-bold text-white"><Mic className="h-3.5 w-3.5" />UZ</span> : null}{currentEpisode.airDate ? <span>{new Date(currentEpisode.airDate).toLocaleDateString("uz-UZ")}</span> : null}{currentEpisode.duration ? <><span>·</span><span>{currentEpisode.duration} daq</span></> : null}<span>·</span><span className="inline-flex items-center gap-1"><Eye className="h-4 w-4" />{formatViewCount(episodeViews)} ko‘rildi</span></p>
         </div>
+
+        <div id="yandex_rtb_R-A-19814476-1" />
+    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
 
         <div className="flex flex-col gap-3 border-y border-white/[.06] py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="grid h-12 grid-cols-2 divide-x divide-white/10 rounded-xl border border-white/[.07] bg-white/[.045] sm:w-[160px]">
