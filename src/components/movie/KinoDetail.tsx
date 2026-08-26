@@ -6,6 +6,7 @@ import { Bookmark, CalendarDays, ChevronRight, Clock3, Eye, Film, Play, Star, Ta
 import { formatDuration, formatViewCount } from "@/lib/utils";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
+import PlayerAdSlot from "@/components/ads/PlayerAdSlot";
 import type { Movie } from "@/types/movie";
 
 const COUNTRY_CODES: Record<string, string> = {
@@ -108,6 +109,8 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
     </section>
 
     <div className="mx-auto max-w-[1400px] px-4 pb-16 md:px-8">
+      <PlayerAdSlot />
+
       <section className="rounded-2xl border border-white/10 bg-white/[.025] px-5 py-6 shadow-[0_14px_50px_rgba(64,25,110,.12)] md:px-8">
         <h2 className="text-xl font-semibold text-white">Film haqida</h2>
         <ExpandableText text={movie.description} lines={2} alwaysShowToggle className="mt-3 text-sm leading-7 text-gray-400 md:text-base" buttonClassName="mt-5 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-black/20 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-violet-400/50 hover:bg-white/5" />

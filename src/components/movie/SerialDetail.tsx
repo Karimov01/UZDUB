@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useSavedList } from "@/hooks/useSavedList";
 import { formatViewCount } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
+import PlayerAdSlot from "@/components/ads/PlayerAdSlot";
 import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
 import SeriesCard from "@/components/home/SeriesCard";
 
@@ -74,13 +75,17 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
     </section>
 
   
-    {firstEpisode ? <section className="mx-auto max-w-[1400px] px-4 pt-8 md:px-8">
+    <section className="mx-auto max-w-[1400px] px-4 pt-8 md:px-8">
+      <PlayerAdSlot />
+
+      {firstEpisode ? <>
       <div className="mb-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-4 md:p-5">
         <button type="button" onClick={() => setDescriptionOpen((value) => !value)} className="flex w-full items-center justify-between text-left" aria-expanded={descriptionOpen}><h2 className="font-bold">Tavsif</h2><ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${descriptionOpen ? "rotate-180" : ""}`} /></button>
         {descriptionOpen ? <p className="mt-3 text-sm leading-6 text-gray-400 md:text-base">{serial.description}</p> : null}
       </div>
       <Link href={watchHref} className="group relative block aspect-video overflow-hidden rounded-2xl border border-white/15 bg-black">{(firstEpisode.previewUrl || serial.backdropUrl) ? <Image src={firstEpisode.previewUrl || serial.backdropUrl!} alt="1-qism" fill className="object-cover" sizes="100vw" /> : null}<span className="absolute inset-0 bg-black/20" /><span className="absolute inset-0 flex items-center justify-center"><span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-pink-500 shadow-xl transition-transform group-hover:scale-105"><Play className="ml-1 h-7 w-7 fill-white" /></span></span></Link>
-    </section> : null}
+      </> : null}
+    </section>
 
     {episodes.length ? <SeasonEpisodeSelector slug={serial.slug} episodes={episodes} title={serial.title} /> : null}
 
