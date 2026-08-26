@@ -33,9 +33,7 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
   const watchHref = firstEpisode ? `/serial/${serial.slug}/qism/${firstEpisode.season}/${firstEpisode.episode}` : `/serial/${serial.slug}/tomosha`;
   const similar = similarMovies.slice(0, 8);
 
-<div id="yandex_rtb_R-A-19814476-1" />
-    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
-  
+
   return <div className="min-h-screen bg-[#080a10] text-white">
     <section className="relative overflow-hidden border-b border-white/[.05]">
       {serial.backdropUrl ? <Image src={serial.backdropUrl} alt="" fill priority className="object-cover object-center opacity-20" sizes="100vw" /> : null}
@@ -75,6 +73,9 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
       </div>
     </section>
 
+<div id="yandex_rtb_R-A-19814476-1" />
+    <Script id="yandex-rtb-R-A-19814476-1" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.yaContextCb = window.yaContextCb || []; window.yaContextCb.push(() => { Ya.Context.AdvManager.render({ blockId: "R-A-19814476-1", renderTo: "yandex_rtb_R-A-19814476-1" }); });` }} />
+  
     {firstEpisode ? <section className="mx-auto max-w-[1400px] px-4 pt-8 md:px-8">
       <div className="mb-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-4 md:p-5">
         <button type="button" onClick={() => setDescriptionOpen((value) => !value)} className="flex w-full items-center justify-between text-left" aria-expanded={descriptionOpen}><h2 className="font-bold">Tavsif</h2><ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${descriptionOpen ? "rotate-180" : ""}`} /></button>
