@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import { Bookmark, CalendarDays, ChevronDown, Eye, Film, Layers3, Play, Tag } from "lucide-react";
 import { useState } from "react";
 import { useSavedList } from "@/hooks/useSavedList";
