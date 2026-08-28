@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Download, Eye, MessageCircle, PlayCircle, Share2, ThumbsDown, ThumbsUp, VideoOff } from "lucide-react";
 import type { Movie } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
+import DetailAdSlot from "@/components/ads/DetailAdSlot";
 import WatchRecommendations from "@/components/player/WatchRecommendations";
 import TelegramChannelButton from "@/components/shared/TelegramChannelButton";
 import WatchComments, { type WatchReaction } from "@/components/player/WatchComments";
@@ -47,6 +48,8 @@ export default function TomashaClient({ movie, recommendations = [] }: { movie: 
           <p className="mt-3 hidden max-w-3xl truncate text-sm text-slate-400 sm:block">{movie.shortDesc || movie.description}</p>
         </div>
       </section>
+
+      <DetailAdSlot />
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_20px_70px_rgba(76,29,149,.18)]">
         {movie.videoUrl ? <UzdubPlayer src={movie.videoUrl} poster={movie.backdropUrl || movie.posterUrl} /> : <div className="flex aspect-video items-center justify-center gap-3 text-slate-400"><VideoOff className="h-9 w-9" />Video havolasi qo&apos;shilmagan</div>}
