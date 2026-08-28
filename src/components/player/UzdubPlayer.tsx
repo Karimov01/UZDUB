@@ -7,7 +7,6 @@ interface PlayerSource {
   type?: string | null;
   poster?: string | null;
   vast?: string | null;
-  yandex?: unknown;
 }
 interface PlayerInstance {
   init: () => void;
@@ -35,7 +34,6 @@ const SCRIPTS = [
   "/player/player.sources.js",
   "/player/player.events.js",
   "/player/player.vast.js",
-  "/player/player.yandex.js",
   "/player/player.core.js",
 ];
 

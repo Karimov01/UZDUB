@@ -508,19 +508,9 @@ class UIManager {
     /*  Ad layer                                                            */
     /* ------------------------------------------------------------------ */
 
-    /** Yandex: adVideo visible (fills black background behind SDK controls) */
-    showAdLayerYandex() {
-        this.elements.adVideo.style.display = 'block'; // CSS default = none, shuning uchun aniq 'block'
-        this.elements.adSkip.style.display  = 'none';  // SDK injects its own
-        // Yandex o'z UI'sini beradi — bizning VAST bezaklarini yashiramiz (skip bosilishi uchun)
-        this.elements.adLayer.classList.add('uzdub-ad-yandex');
-        this.showAdLayer();
-    }
-
     /** VAST: adVideo hidden, main video shows through transparent adLayer */
     showAdLayerVast() {
         this.elements.adVideo.style.display = 'none';
-        this.elements.adLayer.classList.remove('uzdub-ad-yandex');
         this.showAdLayer();
     }
 
@@ -532,7 +522,6 @@ class UIManager {
     hideAdLayer() {
         this.elements.adLayer.style.display = 'none';
         this.elements.adVideo.style.display = 'none';
-        this.elements.adLayer.classList.remove('uzdub-ad-yandex');
         this.elements.wrapper.classList.remove('uzdub-in-ad');
         clearInterval(this._skipTimer);
     }

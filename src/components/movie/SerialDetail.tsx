@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useSavedList } from "@/hooks/useSavedList";
 import { formatViewCount } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
-import PlayerAdSlot from "@/components/ads/PlayerAdSlot";
+import DetailAdSlot from "@/components/ads/DetailAdSlot";
 import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
 import SeriesCard from "@/components/home/SeriesCard";
 
@@ -76,7 +76,7 @@ export default function SerialDetail({ serial, similarMovies = [] }: { serial: M
 
   
     <section className="mx-auto max-w-[1400px] px-4 pt-8 md:px-8">
-      <PlayerAdSlot />
+      <DetailAdSlot />
 
       {firstEpisode ? <>
       <div className="mb-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-4 md:p-5">

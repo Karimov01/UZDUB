@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Play, PlayCircle, MessageCircle, Globe } from "lucide-react";
 import LiveInternetCounter from "@/components/analytics/LiveInternetCounter";
-import Script from "next/script";
 
 const footerLinks = {
   Kontent: [
@@ -107,78 +106,6 @@ export default function Footer() {
             </div>
           ))}
         </div>
-
-        {/* Yandex.RTB R-A-19814476-3 — Fullscreen Desktop */}
-<Script
-  id="yandex-rtb-R-A-19814476-3"
-  strategy="afterInteractive"
-  dangerouslySetInnerHTML={{
-    __html: `
-      window.yaContextCb = window.yaContextCb || [];
-      window.yaContextCb.push(() => {
-        Ya.Context.AdvManager.render({
-          blockId: "R-A-19814476-3",
-          type: "fullscreen",
-          platform: "desktop"
-        });
-      });
-    `,
-  }}
-/>
-
-{/* Yandex.RTB R-A-19814476-2 — Fullscreen Mobile */}
-<Script
-  id="yandex-rtb-R-A-19814476-2"
-  strategy="afterInteractive"
-  dangerouslySetInnerHTML={{
-    __html: `
-      window.yaContextCb = window.yaContextCb || [];
-      window.yaContextCb.push(() => {
-        Ya.Context.AdvManager.render({
-          blockId: "R-A-19814476-2",
-          type: "fullscreen",
-          platform: "touch"
-        });
-      });
-    `,
-  }}
-/>
-
-        {/* Yandex.RTB R-A-19814476-5 — Floor Ad Desktop */}
-<Script
-  id="yandex-rtb-R-A-19814476-5"
-  strategy="afterInteractive"
-  dangerouslySetInnerHTML={{
-    __html: `
-      window.yaContextCb = window.yaContextCb || [];
-      window.yaContextCb.push(() => {
-        Ya.Context.AdvManager.render({
-          blockId: "R-A-19814476-5",
-          type: "floorAd",
-          platform: "desktop"
-        });
-      });
-    `,
-  }}
-/>
-
-{/* Yandex.RTB R-A-19814476-4 — Floor Ad Mobile */}
-<Script
-  id="yandex-rtb-R-A-19814476-4"
-  strategy="afterInteractive"
-  dangerouslySetInnerHTML={{
-    __html: `
-      window.yaContextCb = window.yaContextCb || [];
-      window.yaContextCb.push(() => {
-        Ya.Context.AdvManager.render({
-          blockId: "R-A-19814476-4",
-          type: "floorAd",
-          platform: "touch"
-        });
-      });
-    `,
-  }}
-/>
 
         <div
           className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"

@@ -92,7 +92,7 @@
     position: absolute;
     inset: 0;
     display: none;
-    background: transparent; /* VAST: main video shows through; Yandex: adVideo fills */
+    background: transparent; /* VAST: main video shows through */
     z-index: 20;
 }
 .uzdub-ad-video {
@@ -214,12 +214,6 @@
     cursor: pointer;
 }
 
-/* Yandex SDK o'z UI'sini beradi (skip, click-through, ovoz) —
-   bizning VAST bezaklarimizni yashiramiz, aks holda ular Yandex skip'ini to'sadi */
-.uzdub-ad-yandex .uzdub-ad-clickzone,
-.uzdub-ad-yandex .uzdub-ad-vol-btn,
-.uzdub-ad-yandex .uzdub-ad-top,
-.uzdub-ad-yandex .uzdub-ad-skip { display: none !important; }
 .uzdub-ad-loading {
     position: absolute;
     inset: 0;

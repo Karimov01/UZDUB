@@ -28,7 +28,6 @@ class UZDUBPlayer {
         this.events = null;
         this.sources = null;
         this.vast = null;
-        this.yandexAds = null;
 
         this.currentSource = null;
         this.currentType = null;
@@ -67,7 +66,6 @@ class UZDUBPlayer {
         this.events.bind();
 
         this.vast = new VastManager(this);
-        this.yandexAds = null; // YandexAdsManager — load() da yaratiladi
 
         // VAST ad state → _inAd (events.js buni tekshiradi)
         if (this.events && this.events.listen) {
@@ -112,28 +110,15 @@ class UZDUBPlayer {
             this.ui.setupThumbnailSource(source.src);
         }
 
-        // Ads — Yandex SDK ustunlik qiladi; agar yo'q bo'lsa VAST ishlatiladi
-        this.prerollTag = null;
-        if (this.yandexAds) { this.yandexAds.destroy(); this.yandexAds = null; }
+        // VAST reklama sozlamalari
+        this.prerollTag = source.vast || source.preroll || null;
 
-        if (source.yandex && typeof YandexAdsManager !== 'undefined') {
-            // Yandex InStream JS SDK — preroll/midroll/postroll ni o'zi boshqaradi
-            this.yandexAds = new YandexAdsManager(this, source.yandex);
-            // prerollTag ni saqlaymiz — play() ichida ishlatiladi
-            this.prerollTag = source.yandex.preroll ? '__yandex__' : null;
-            // SDK ni fon rejimida oldindan yuklaymiz (mobil autoplay uchun muhim)
-            this.yandexAds.loadSdk();
-        } else {
-            // Oddiy VAST tag URL
-            this.prerollTag = source.vast || source.preroll || null;
-
-            if (this.vast) {
-                const config = {};
-                if (this.prerollTag) config.preroll = this.prerollTag;
-                if (source.postroll) config.postroll = source.postroll;
-                if (Array.isArray(source.midroll)) config.midroll = source.midroll;
-                this.vast.configure(config);
-            }
+        if (this.vast) {
+            const config = {};
+            if (this.prerollTag) config.preroll = this.prerollTag;
+            if (source.postroll) config.postroll = source.postroll;
+            if (Array.isArray(source.midroll)) config.midroll = source.midroll;
+            this.vast.configure(config);
         }
 
         return this;
@@ -165,10 +150,7 @@ class UZDUBPlayer {
             if (this.prerollTag && !this.prerollDone) {
                 this.prerollDone = true;
 
-                if (this.yandexAds && this.prerollTag === '__yandex__') {
-                    // Yandex JS SDK preroll
-                    this.yandexAds.playPreroll();
-                } else if (this.vast) {
+                if (this.vast) {
                     // VAST preroll
                     this.vast.playPreroll(this.prerollTag);
                 } else {
@@ -418,7 +400,6 @@ class UZDUBPlayer {
     ========================== */
 
     destroy() {
-        if (this.yandexAds) this.yandexAds.destroy();
         if (this.vast) this.vast.destroy();
         if (this.events) this.events.destroy();
         if (this.sources) this.sources.destroy();
