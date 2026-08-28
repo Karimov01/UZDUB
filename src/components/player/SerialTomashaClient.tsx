@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Episode, Movie } from "@/types/movie";
 import UzdubPlayer from "@/components/player/UzdubPlayer";
+import DetailAdSlot from "@/components/ads/DetailAdSlot";
 import SeasonEpisodeSelector, { normalizeEpisodes } from "@/components/serial/SeasonEpisodeSelector";
 import WatchComments, { type WatchReaction } from "@/components/player/WatchComments";
 import { formatViewCount } from "@/lib/utils";
@@ -60,6 +61,8 @@ export default function SerialTomashaClient({ serial, initialSeason, initialEpis
   return <div className="min-h-screen bg-[#070910] text-white">
     <main className="mx-auto grid w-full max-w-[1400px] gap-6 px-4 pb-8 pt-5 md:px-8 xl:grid-cols-[minmax(0,1fr)_380px]">
       <div className="min-w-0">
+        <DetailAdSlot />
+
         <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black">
           {videoUrl ? <UzdubPlayer key={currentEpisode.id} src={videoUrl} poster={currentEpisode.previewUrl || serial.backdropUrl || serial.posterUrl} onEnded={nextEpisode ? () => setNextCountdown(5) : undefined} /> : <div className="flex aspect-video flex-col items-center justify-center gap-3 text-gray-400"><VideoOff className="h-11 w-11" /><p>Bu qism uchun video havolasi qo‘shilmagan</p></div>}
           {nextCountdown !== null && nextEpisode ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4"><div className="w-full max-w-sm rounded-2xl border border-fuchsia-400/40 bg-[#11131d] p-5 text-center"><p className="text-gray-400">Keyingi qism {nextCountdown} soniyadan keyin ochiladi</p><h2 className="mt-2 text-xl font-bold">{nextEpisode.episode}-qism</h2><div className="mt-5 flex gap-2"><button type="button" onClick={() => router.push(episodeHref(serial.slug, nextEpisode))} className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 px-4 py-3 font-semibold"><Play className="mr-2 inline h-4 w-4 fill-white" />Ochish</button><button type="button" onClick={() => setNextCountdown(null)} className="rounded-xl border border-white/15 px-4"><X className="h-4 w-4" /></button></div></div></div> : null}
