@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Admin preview runtime URL va native onError fallback talab qiladi. */
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -243,7 +245,6 @@ export default function EditMovieForm({ movie, editable }: { movie: Movie; edita
               <input ref={posterInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile("posterUrl")} />
               <button type="button" onClick={() => posterInputRef.current?.click()} className="w-full px-3 py-2 rounded-xl text-sm flex items-center justify-center gap-2" style={{ border: "1px dashed var(--border)", color: "var(--text-muted)" }}><Upload className="h-4 w-4" />{uploadingKey === "posterUrl" ? "Yuklanmoqda..." : "Poster tanlash"}</button>
               {form.posterUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
                 <div className="relative"><img src={form.posterUrl} alt="poster" className="mt-2 w-full aspect-[2/3] object-cover rounded-lg" onError={(e) => (e.currentTarget.style.display = "none")} /><button type="button" onClick={() => set("posterUrl", "")} className="absolute right-2 top-2 p-1 rounded bg-red-500 text-white"><X className="h-3.5 w-3.5" /></button></div>
               )}
             </div>

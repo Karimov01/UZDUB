@@ -1,7 +1,9 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Izoh avatar URL'lari foydalanuvchi ma'lumoti; ularni server image proxy orqali o'tkazmaymiz. */
+
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -75,21 +77,21 @@ export default function EngagementPanel({ content }: { content: Movie }) {
     [error, setError] = useState(""),
     [isVoting, setIsVoting] = useState(false);
   const anchor = useRef<HTMLElement>(null);
-  const getPage = async (offset = 0) => {
+  const getPage = useCallback(async (offset = 0) => {
     const r = await fetch(
       `/api/public/engagement/${content.id}?sort=${sort}&offset=${offset}`,
       { cache: "no-store" },
     );
     return r.ok ? ((await r.json()) as Data) : null;
-  };
-  const load = async () => {
+  }, [content.id, sort]);
+  const load = useCallback(async () => {
     const next = await getPage();
     if (next) setData(next);
-  };
+  }, [getPage]);
   useEffect(() => {
     setExpanded(false);
     void load();
-  }, [sort]);
+  }, [load, sort]);
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2200);

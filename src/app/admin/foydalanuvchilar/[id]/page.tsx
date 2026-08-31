@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- Telegram avatar URL'lari runtime foydalanuvchi ma'lumoti; ularni server image proxy orqali o'tkazmaymiz. */
+
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Bell, CalendarDays, Crown, Shield, UserRound } from "lucide-react";

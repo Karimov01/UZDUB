@@ -12,7 +12,9 @@ function remainingTime(publishedAt?: string): number {
 }
 
 export default function NewBadge({ publishedAt }: { publishedAt?: string }) {
-  const [visible, setVisible] = useState(() => remainingTime(publishedAt) > 0);
+  // Server va brauzer bir xil HTML bilan boshlashi uchun vaqtga bog'liq
+  // hisobni faqat hydration tugagandan keyin bajaramiz.
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     const remaining = remainingTime(publishedAt);
     setVisible(remaining > 0);

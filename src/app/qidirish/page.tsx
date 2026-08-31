@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, Search, X } from "lucide-react";
 import type { Movie } from "@/types/movie";
@@ -14,8 +14,8 @@ function QidirishContent() {
   const router = useRouter(); const params = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? ""); const [result, setResult] = useState<Result>(empty); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
   const key = params.toString();
-  const setParam = (name: string, value: string) => { const next = new URLSearchParams(params.toString()); value ? next.set(name, value) : next.delete(name); if (name !== "page") next.delete("page"); router.replace(`/qidirish?${next.toString()}`); };
-  useEffect(() => { const timer = window.setTimeout(() => { if (query !== (params.get("q") ?? "")) setParam("q", query); }, 400); return () => window.clearTimeout(timer); }, [query]);
+  const setParam = useCallback((name: string, value: string) => { const next = new URLSearchParams(key); if (value) next.set(name, value); else next.delete(name); if (name !== "page") next.delete("page"); const nextKey = next.toString(); router.replace(nextKey ? `/qidirish?${nextKey}` : "/qidirish"); }, [key, router]);
+  useEffect(() => { const timer = window.setTimeout(() => { if (query !== (new URLSearchParams(key).get("q") ?? "")) setParam("q", query); }, 400); return () => window.clearTimeout(timer); }, [key, query, setParam]);
   useEffect(() => { setLoading(true); setError(""); fetch(`/api/public/search?${key}`).then(async (r) => r.ok ? r.json() : Promise.reject()).then((data: Result) => setResult(data)).catch(() => { setResult(empty); setError("Qidiruvni yuklab bo‘lmadi."); }).finally(() => setLoading(false)); }, [key]);
   const value = (name: string) => params.get(name) ?? "";
   const clear = () => { setQuery(""); router.replace("/qidirish"); };

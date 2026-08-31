@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2, Sparkles, Loader2, Film, Layers3, CirclePlus, Eye } from "lucide-react";
+import { Plus, Trash2, Sparkles, Loader2, Layers3, CirclePlus, Eye } from "lucide-react";
 
 export interface EpisodeForm { id?: string; season: string; episode: string; title: string; description: string; videoUrl: string; duration: string; aiProcessedAt?: string; }
 export function emptyEpisode(nextNum: number, season = 1): EpisodeForm { return { season: String(season), episode: String(nextNum), title: "", description: "", videoUrl: "", duration: "" }; }

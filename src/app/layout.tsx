@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import JsonLd from "@/components/seo/JsonLd";
-import { Analytics } from "@vercel/analytics/next";
 import { APP_NAME, SITE_URL, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_LOCALE } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body-next", display: "swap" });
@@ -40,5 +38,5 @@ const siteJsonLd = [
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><Script id="adfinity-global" src="https://cdn.adfinity.pro/code/8414/adfinity.js" strategy="afterInteractive" async /><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout><Analytics /></body></html>;
+  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout></body></html>;
 }

@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Telegram avatar URL'lari runtime foydalanuvchi ma'lumoti; ularni server image proxy orqali o'tkazmaymiz. */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, Check, ChevronLeft, ChevronRight, Crown, Pencil, Search, Shield, UserRound, Users, X } from "lucide-react";
 import type { StoredUser, UserStats } from "@/lib/movies-store";

@@ -1,0 +1,59 @@
+name: uzdub_next
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: https://uzdub.com
+        NEXT_PUBLIC_APP_URL: https://uzdub.com
+      secrets:
+        - env_file
+    env_file:
+      - .env.production.local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_SITE_URL: https://uzdub.com
+      NEXT_PUBLIC_APP_URL: https://uzdub.com
+    ports:
+      - "127.0.0.1:3000:3000"
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 256
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - next_cache:/app/.next/cache
+
+secrets:
+  env_file:
+    file: .env.production.local
+
+volumes:
+  next_cache:
