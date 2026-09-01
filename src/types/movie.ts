@@ -78,6 +78,7 @@ export interface Movie {
   isPremium?: boolean;
   isComingSoon?: boolean;
   isRussian?: boolean;
+  isTrailer?: boolean;
 
   seoTitle?: string;
   seoDescription?: string;

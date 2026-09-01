@@ -7,6 +7,7 @@ import { formatDuration, formatViewCount } from "@/lib/utils";
 import { useSavedList } from "@/hooks/useSavedList";
 import ExpandableText from "@/components/ui/ExpandableText";
 import DetailAdSlot from "@/components/ads/DetailAdSlot";
+import ContentStatusBanner from "@/components/movie/ContentStatusBanner";
 import type { Movie } from "@/types/movie";
 
 const COUNTRY_CODES: Record<string, string> = {
@@ -110,6 +111,7 @@ export default function KinoDetail({ movie, similarMovies = [] }: { movie: Movie
 
     <div className="mx-auto max-w-[1400px] px-4 pb-16 md:px-8">
       <DetailAdSlot />
+      <ContentStatusBanner content={movie} />
 
       <section className="rounded-2xl border border-white/10 bg-white/[.025] px-5 py-6 shadow-[0_14px_50px_rgba(64,25,110,.12)] md:px-8">
         <h2 className="text-xl font-semibold text-white">Film haqida</h2>

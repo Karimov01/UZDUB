@@ -57,6 +57,7 @@ export const MovieInput = z.object({
   isPremium: z.boolean().optional().default(false),
   isComingSoon: z.boolean().optional().default(false),
   isRussian: z.boolean().optional().default(false),
+  isTrailer: z.boolean().optional().default(false),
   episodes: z
     .array(
       z.object({

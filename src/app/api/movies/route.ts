@@ -6,10 +6,12 @@ import { readMovies, addMovie, slugExists } from "@/lib/movies-store";
 import { MovieInput, mapGenres, mapEpisodes, slugify } from "@/lib/movie-input";
 import { createAutomaticSeo } from "@/lib/seo";
 import { notifyIndexNow } from "@/lib/indexnow";
+import { adminPreviewMovies, isLocalAdminPreview } from "@/lib/admin-preview";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  if (isLocalAdminPreview()) return NextResponse.json({ movies: adminPreviewMovies });
   const movies = await readMovies();
   return NextResponse.json({ movies });
 }
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
   const id = randomUUID();
   const seo = createAutomaticSeo({ title: d.title, year: d.year, type: d.type as ContentType, shortDesc: d.shortDesc, description: d.description });
   const now = new Date().toISOString();
-  const movie: Movie = { id, slug, title: d.title, originalTitle: d.originalTitle || undefined, description: d.description, shortDesc: d.shortDesc || undefined, posterUrl: d.posterUrl || undefined, backdropUrl: d.backdropUrl || undefined, videoUrl: d.videoUrl || undefined, trailerUrl: d.trailerUrl || undefined, type: d.type as ContentType, status: d.status as ContentStatus, year: d.year, duration: d.duration, country: d.country || undefined, language: d.language || undefined, dubbing: d.dubbing || undefined, imdbRating: d.imdbRating, viewCount: 0, isFeatured: d.isFeatured, isTrending: d.isTrending, isPremium: d.isPremium, isComingSoon: d.isComingSoon, isRussian: d.isRussian, ...seo, publishedAt: d.status === "PUBLISHED" && !d.isComingSoon ? now : undefined, createdAt: now, updatedAt: now, genres: mapGenres(d.genres), episodes: mapEpisodes(d.episodes, id) };
+  const movie: Movie = { id, slug, title: d.title, originalTitle: d.originalTitle || undefined, description: d.description, shortDesc: d.shortDesc || undefined, posterUrl: d.posterUrl || undefined, backdropUrl: d.backdropUrl || undefined, videoUrl: d.videoUrl || undefined, trailerUrl: d.trailerUrl || undefined, type: d.type as ContentType, status: d.status as ContentStatus, year: d.year, duration: d.duration, country: d.country || undefined, language: d.language || undefined, dubbing: d.dubbing || undefined, imdbRating: d.imdbRating, viewCount: 0, isFeatured: d.isFeatured, isTrending: d.isTrending, isPremium: d.isPremium, isComingSoon: d.isComingSoon, isRussian: d.isRussian, isTrailer: d.isTrailer, ...seo, publishedAt: d.status === "PUBLISHED" && !d.isComingSoon ? now : undefined, createdAt: now, updatedAt: now, genres: mapGenres(d.genres), episodes: mapEpisodes(d.episodes, id) };
   try { await addMovie(movie); } catch (err) { const msg = err instanceof Error ? err.message : ""; return NextResponse.json({ error: `Bazaga saqlab bo'lmadi. DATABASE_URL ni tekshiring. ${msg}`.trim() }, { status: 500 }); }
 
   const path = movie.type === "SERIAL" ? `/serial/${movie.slug}` : `/kino/${movie.slug}`;

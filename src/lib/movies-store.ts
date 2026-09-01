@@ -219,8 +219,8 @@ export async function readPublishedMovieBySlug(slug: string, type?: "MOVIE" | "S
   await ensureTable();
   const sql = db();
   const rows = type
-    ? await sql`SELECT data FROM movies WHERE slug = ${slug} AND data->>'status' = 'PUBLISHED' AND data->>'type' = ${type} AND COALESCE((data->>'isComingSoon')::boolean, false) = false LIMIT 1` as { data: Movie }[]
-    : await sql`SELECT data FROM movies WHERE slug = ${slug} AND data->>'status' = 'PUBLISHED' AND COALESCE((data->>'isComingSoon')::boolean, false) = false LIMIT 1` as { data: Movie }[];
+    ? await sql`SELECT data FROM movies WHERE slug = ${slug} AND data->>'status' = 'PUBLISHED' AND data->>'type' = ${type} LIMIT 1` as { data: Movie }[]
+    : await sql`SELECT data FROM movies WHERE slug = ${slug} AND data->>'status' = 'PUBLISHED' LIMIT 1` as { data: Movie }[];
   return rows[0]?.data;
 }
 

@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMovie } from "@/lib/movies-store";
 import EditMovieForm from "@/components/admin/EditMovieForm";
+import { adminPreviewMovies, isLocalAdminPreview } from "@/lib/admin-preview";
 
 export const metadata: Metadata = { title: "Tahrirlash" };
 
 export default async function EditKinoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let dbMovie;
-  try {
-    dbMovie = await getMovie(id);
-  } catch {
-    dbMovie = undefined;
+  let dbMovie = isLocalAdminPreview() ? adminPreviewMovies.find((movie) => movie.id === id) : undefined;
+  if (!dbMovie) {
+    try {
+      dbMovie = await getMovie(id);
+    } catch {
+      dbMovie = undefined;
+    }
   }
   if (!dbMovie) notFound();
 

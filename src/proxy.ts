@@ -8,6 +8,9 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
+  const localPreview = process.env.NODE_ENV !== "production" && process.env.ADMIN_LOCAL_PREVIEW === "1" && ["localhost", "127.0.0.1"].includes(req.nextUrl.hostname);
+  if (localPreview) return NextResponse.next();
+
   // Login sahifasi himoyalanmagan (aks holda cheksiz redirect bo'ladi)
   if (pathname === "/admin/login") return NextResponse.next();
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Save, Image as ImageIcon, Sparkles, Loader2, Upload, X, Video } from "lucide-react";
+import { AdminGenreChip, AdminToggle } from "@/components/admin/AdminUi";
 
 const GENRES = ["Drama", "Harakatli", "Triller", "Ilmiy fantastika", "Fantastik", "Jinoyat", "Komediya", "Romantik", "Tarix", "Multfilm", "Dahshat", "Musiqa"];
 
@@ -13,7 +14,7 @@ export default function YangiKinoPage() {
     title: "", originalTitle: "", type: "MOVIE", year: "", duration: "",
     country: "", language: "Ingliz", dubbing: "O'zbek", imdbRating: "",
     description: "", shortDesc: "", posterUrl: "", backdropUrl: "", videoUrl: "", trailerUrl: "", status: "DRAFT",
-    genres: [] as string[], isFeatured: false, isTrending: false, isPremium: false, isComingSoon: false, isRussian: false,
+    genres: [] as string[], isFeatured: false, isTrending: false, isPremium: false, isComingSoon: false, isRussian: false, isTrailer: false,
   });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -142,27 +143,27 @@ export default function YangiKinoPage() {
     }
   };
 
-  const inputClass = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none transition-all focus:ring-1";
+  const inputClass = "admin-input";
   const inputStyle = { background: "var(--bg-primary)", border: "1px solid var(--border)", fontFamily: "var(--font-body)" };
   const focusStyle = { "--tw-ring-color": "var(--accent-violet)" } as React.CSSProperties;
 
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto max-w-[1450px]">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/kinolar" className="p-2 rounded-xl transition-all hover:bg-white/8" style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>
-          <ChevronLeft className="h-4 w-4" />
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <Link href="/admin/kinolar" className="admin-icon-button" aria-label="Kinolar ro'yxatiga qaytish">
+          <ChevronLeft className="h-5 w-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="text-xl font-bold text-white sm:text-2xl" style={{ fontFamily: "var(--font-display)" }}>
             Yangi kino qo&apos;shish
           </h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nomi va yilini kiriting, qolganini AI to&apos;ldiradi</p>
         </div>
-        <div className="ml-auto flex gap-3">
+        <div className="ml-auto flex gap-2">
           <button
             onClick={() => set("status", "DRAFT")}
-            className="px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/8"
+            className="hidden min-h-11 rounded-xl border border-white/10 px-4 text-sm font-medium text-slate-400 transition hover:bg-white/5 sm:block"
             style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
           >
             Qoralama
@@ -170,7 +171,7 @@ export default function YangiKinoPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60"
+            className="admin-primary-button min-h-11 px-5 disabled:opacity-60"
             style={{ background: saved ? "#10B981" : "linear-gradient(135deg, #7C3AED, #EC4899)" }}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -179,11 +180,11 @@ export default function YangiKinoPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,.92fr)]">
         {/* Main form */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="space-y-5">
           {/* Basic info */}
-          <div className="p-5 rounded-2xl space-y-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <div className="admin-card space-y-4 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold text-white text-sm" style={{ fontFamily: "var(--font-display)" }}>Asosiy ma&apos;lumotlar</h3>
               <button
@@ -225,7 +226,7 @@ export default function YangiKinoPage() {
           </div>
 
           {/* Details */}
-          <div className="p-5 rounded-2xl space-y-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <div className="admin-card space-y-4 p-4 sm:p-5">
             <h3 className="font-semibold text-white text-sm" style={{ fontFamily: "var(--font-display)" }}>Tafsilotlar</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
@@ -265,7 +266,7 @@ export default function YangiKinoPage() {
           </div>
 
           {/* Video havolalari */}
-          <div className="p-5 rounded-2xl space-y-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <div className="admin-card space-y-4 p-4 sm:p-5">
             <h3 className="flex items-center gap-2 font-semibold text-white text-sm" style={{ fontFamily: "var(--font-display)" }}>
               <Video className="h-4 w-4" style={{ color: "var(--accent-violet)" }} />
               Video havolalari
@@ -281,23 +282,10 @@ export default function YangiKinoPage() {
           </div>
 
           {/* Genres */}
-          <div className="p-5 rounded-2xl" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <div className="admin-card p-4 sm:p-5">
             <h3 className="font-semibold text-white text-sm mb-4" style={{ fontFamily: "var(--font-display)" }}>Janrlar</h3>
             <div className="flex flex-wrap gap-2">
-              {genresAvailable.map((g) => (
-                <button
-                  key={g}
-                  onClick={() => toggleGenre(g)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{
-                    background: form.genres.includes(g) ? "linear-gradient(135deg, #7C3AED, #EC4899)" : "var(--bg-primary)",
-                    color: form.genres.includes(g) ? "#fff" : "var(--text-muted)",
-                    border: form.genres.includes(g) ? "none" : "1px solid var(--border)",
-                  }}
-                >
-                  {g}
-                </button>
-              ))}
+              {genresAvailable.map((g) => <AdminGenreChip key={g} selected={form.genres.includes(g)} onClick={() => toggleGenre(g)}>{g}</AdminGenreChip>)}
             </div>
           </div>
         </div>
@@ -305,7 +293,7 @@ export default function YangiKinoPage() {
         {/* Sidebar */}
         <div className="space-y-5">
           {/* Images */}
-          <div className="p-5 rounded-2xl space-y-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <div className="admin-card space-y-4 p-4 sm:p-5">
             <h3 className="font-semibold text-white text-sm" style={{ fontFamily: "var(--font-display)" }}>Rasmlar</h3>
 
             {/* Poster upload */}
@@ -378,7 +366,7 @@ export default function YangiKinoPage() {
           </div>
 
           {/* Status & options */}
-          <div className="p-5 rounded-2xl space-y-4" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <div className="admin-card space-y-4 p-4 sm:p-5">
             <h3 className="font-semibold text-white text-sm" style={{ fontFamily: "var(--font-display)" }}>Holat va sozlamalar</h3>
             <div>
               <label className="block text-xs mb-1.5" style={{ color: "var(--text-muted)" }}>Nashr holati</label>
@@ -388,28 +376,13 @@ export default function YangiKinoPage() {
                 <option value="ARCHIVED">Arxivlangan</option>
               </select>
             </div>
-            <div className="space-y-3">
-              {[
-                { key: "isFeatured", label: "Hero bannerda ko'rsatish" },
-                { key: "isTrending", label: "Trendda ko'rsatish" },
-                { key: "isPremium", label: "Premium kontent" },
-                { key: "isComingSoon", label: "Tez kunda" },
-                { key: "isRussian", label: "Rus tilida" },
-              ].map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-3 cursor-pointer group">
-                  <div
-                    className="w-9 h-5 rounded-full relative transition-all"
-                    style={{ background: (form as Record<string, unknown>)[key] ? "linear-gradient(135deg, #7C3AED, #EC4899)" : "var(--bg-primary)", border: "1px solid var(--border)" }}
-                    onClick={() => set(key, !(form as Record<string, unknown>)[key])}
-                  >
-                    <div
-                      className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-                      style={{ left: (form as Record<string, unknown>)[key] ? "calc(100% - 18px)" : "2px" }}
-                    />
-                  </div>
-                  <span className="text-sm group-hover:text-white transition-colors" style={{ color: "var(--text-secondary)" }}>{label}</span>
-                </label>
-              ))}
+            <div className="grid gap-x-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <AdminToggle checked={form.isFeatured} onChange={() => set("isFeatured", !form.isFeatured)} label="Hero bannerda" description="Bosh sahifada hero bo'limida" />
+              <AdminToggle checked={form.isComingSoon} onChange={() => set("isComingSoon", !form.isComingSoon)} label="Tez kunda" description="Faqat tez kunda katalogida" />
+              <AdminToggle checked={form.isTrending} onChange={() => set("isTrending", !form.isTrending)} label="Trendda" description="Trendlar qismida ko'rsatish" />
+              <AdminToggle checked={form.isRussian} onChange={() => set("isRussian", !form.isRussian)} label="Rus tilida" description="Rus tilidagi kontent mavjud" />
+              <AdminToggle checked={form.isPremium} onChange={() => set("isPremium", !form.isPremium)} label="Premium" description="Faqat premium foydalanuvchilar" />
+              <AdminToggle checked={form.isTrailer} onChange={() => set("isTrailer", !form.isTrailer)} label="Treyler" description="Player ustida treyler belgisi" />
               {form.isComingSoon ? <p className="pl-12 text-xs leading-5" style={{ color: "var(--text-muted)" }}>Tez kunda yoqilsa material normal Kino va Serial bo&apos;limlarida ko&apos;rinmaydi.</p> : null}
             </div>
           </div>

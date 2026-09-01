@@ -59,6 +59,73 @@ body {
   min-height: 100vh;
 }
 
+.admin-panel {
+  --admin-card: #0d1220;
+  --admin-card-strong: #101626;
+  --admin-border: rgba(148, 163, 184, 0.14);
+  background:
+    radial-gradient(circle at 72% 0%, rgba(91, 33, 182, .08), transparent 31rem),
+    #070a13;
+}
+
+.admin-card {
+  border: 1px solid var(--admin-border);
+  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(16, 22, 38, .96), rgba(10, 14, 25, .98));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .16);
+}
+
+.admin-input {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: .75rem;
+  background: #080c15;
+  padding: .7rem .85rem;
+  color: #f8fafc;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.admin-input::placeholder { color: #64748b; }
+.admin-input:hover { border-color: rgba(167, 139, 250, .28); }
+.admin-input:focus { border-color: rgba(168, 85, 247, .75); box-shadow: 0 0 0 3px rgba(124, 58, 237, .14); background: #090e19; }
+
+.admin-icon-button {
+  display: inline-flex;
+  height: 42px;
+  width: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, .14);
+  border-radius: .75rem;
+  color: #a8b1c7;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.admin-icon-button:hover { border-color: rgba(167, 139, 250, .4); background: rgba(255, 255, 255, .04); color: #fff; }
+.admin-icon-button:focus-visible { outline: 2px solid rgba(168, 85, 247, .8); outline-offset: 2px; }
+
+.admin-primary-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  border-radius: .8rem;
+  background: linear-gradient(110deg, #7c3aed, #ec4899);
+  padding: .7rem 1.1rem;
+  color: white;
+  font-size: .875rem;
+  font-weight: 650;
+  box-shadow: 0 10px 30px rgba(124, 58, 237, .18);
+  transition: transform .2s, filter .2s;
+}
+.admin-primary-button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.admin-primary-button:focus-visible { outline: 2px solid #c084fc; outline-offset: 2px; }
+.admin-primary-button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+
+.admin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(139, 92, 246, .55) transparent; }
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }

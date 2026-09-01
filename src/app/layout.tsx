@@ -41,5 +41,5 @@ const siteJsonLd = [
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   prefetchDNS("https://counter.yadro.ru");
   preconnect("https://counter.yadro.ru");
-  return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout></body></html>;
+  return <html lang="uz" data-scroll-behavior="smooth" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout></body></html>;
 }

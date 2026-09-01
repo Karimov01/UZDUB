@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/constants";
-import { getPublishedMovies } from "@/lib/movies";
+import { getComingSoon, getPublishedMovies } from "@/lib/movies";
 import { episodePath, getEpisodeVideoData, getMovieVideoData, movieWatchPath } from "@/lib/video-seo";
 
 // Sitemap nashr qilingan kontent bilan har doim birga yangilanishi kerak.
@@ -9,7 +9,8 @@ import { episodePath, getEpisodeVideoData, getMovieVideoData, movieWatchPath } f
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const movies = await getPublishedMovies();
+  const [movies, comingSoon] = await Promise.all([getPublishedMovies(), getComingSoon()]);
+  const publicComingSoon = comingSoon.filter((movie) => movie.status === "PUBLISHED");
   const lastModified = (movie: (typeof movies)[number]) => {
     const value = movie.updatedAt ?? movie.publishedAt ?? movie.createdAt;
     if (!value) return undefined;
@@ -24,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/serial`, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/top`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/janr`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${SITE_URL}/tez-kunda`, changeFrequency: "daily", priority: 0.8 },
   ];
 
   // Janr sahifalari (kontentdan noyob slug'lar)
@@ -38,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Har bir kino/serial sahifasi
-  const contentRoutes: MetadataRoute.Sitemap = movies.map((m) => ({
+  const contentRoutes: MetadataRoute.Sitemap = [...movies, ...publicComingSoon].map((m) => ({
     url: `${SITE_URL}/${m.type === "SERIAL" ? "serial" : "kino"}/${m.slug}`,
     lastModified: lastModified(m),
     changeFrequency: "weekly",
