@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { preconnect, prefetchDNS } from "react-dom";
 import "./globals.css";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
 import JsonLd from "@/components/seo/JsonLd";
@@ -38,5 +39,7 @@ const siteJsonLd = [
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  prefetchDNS("https://counter.yadro.ru");
+  preconnect("https://counter.yadro.ru");
   return <html lang="uz" className={`h-full ${inter.variable} ${spaceGrotesk.variable}`}><body className="min-h-full antialiased flex flex-col"><JsonLd data={siteJsonLd} /><ConditionalLayout>{children}</ConditionalLayout></body></html>;
 }
