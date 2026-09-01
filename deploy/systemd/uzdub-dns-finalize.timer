@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch UZDUB DNS and finalize HTTPS automatically
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Persistent=true
+Unit=uzdub-dns-finalize.service
+
+[Install]
+WantedBy=timers.target

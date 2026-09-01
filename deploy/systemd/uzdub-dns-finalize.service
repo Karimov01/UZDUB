@@ -1,0 +1,8 @@
+[Unit]
+Description=Finalize UZDUB VPS deployment after DNS cutover
+Wants=network-online.target
+After=network-online.target nginx.service docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/uzdub-dns-finalize.sh
