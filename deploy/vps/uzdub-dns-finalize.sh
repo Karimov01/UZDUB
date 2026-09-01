@@ -16,6 +16,21 @@ log() {
   printf '%s\n' "$*"
 }
 
+wait_for_https() {
+  local host="$1"
+  local path="${2:-/}"
+  for _ in {1..30}; do
+    if curl --fail --silent --show-error \
+      --resolve "${host}:443:${ORIGIN_IP}" \
+      "https://${host}${path}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  log "HTTPS tekshiruvi vaqt chegarasidan o'tdi: ${host}${path}"
+  return 1
+}
+
 resolves_to_origin() {
   dig +short A "$1" @1.1.1.1 | grep -Fxq "$ORIGIN_IP"
 }
@@ -53,12 +68,8 @@ install -m 0644 "$NGINX_TLS_TEMPLATE" "$NGINX_AVAILABLE"
 nginx -t
 systemctl reload nginx
 
-curl --fail --silent --show-error \
-  --resolve "${DOMAIN}:443:${ORIGIN_IP}" \
-  "https://${DOMAIN}/api/health" >/dev/null
-curl --fail --silent --show-error \
-  --resolve "${WWW_DOMAIN}:443:${ORIGIN_IP}" \
-  "https://${WWW_DOMAIN}/" >/dev/null
+wait_for_https "$DOMAIN" "/api/health"
+wait_for_https "$WWW_DOMAIN" "/"
 
 /usr/local/sbin/uzdub-set-telegram-webhook.py "$ENV_FILE"
 

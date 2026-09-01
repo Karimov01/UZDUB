@@ -33,7 +33,14 @@ def telegram_request(token: str, method: str, payload: dict | None = None) -> di
         with urllib.request.urlopen(request, timeout=30) as response:
             return json.load(response)
     except urllib.error.HTTPError as error:
-        print(f"Telegram API {method} HTTP {error.code}", file=sys.stderr)
+        description = ""
+        try:
+            error_body = json.loads(error.read().decode("utf-8"))
+            description = str(error_body.get("description", "")).strip()
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            pass
+        suffix = f": {description}" if description else ""
+        print(f"Telegram API {method} HTTP {error.code}{suffix}", file=sys.stderr)
         raise SystemExit(1) from None
     except urllib.error.URLError:
         print(f"Telegram API {method} bilan ulanish amalga oshmadi", file=sys.stderr)
@@ -53,6 +60,9 @@ def main() -> int:
         return 1
 
     site_url = env["NEXT_PUBLIC_SITE_URL"].rstrip("/")
+    if not site_url.startswith("https://"):
+        print("Telegram webhook uchun NEXT_PUBLIC_SITE_URL HTTPS bo'lishi kerak", file=sys.stderr)
+        return 1
     webhook_url = f"{site_url}/api/telegram/webhook"
     result = telegram_request(
         env["TELEGRAM_BOT_TOKEN"],
